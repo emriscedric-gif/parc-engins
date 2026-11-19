@@ -162,6 +162,35 @@ tr.cliquable:hover td{background:#f9fafb}
   #voile{padding:0}
   .modale{border-radius:0;min-height:100%}
 }
+small.sous{display:block;color:var(--doux);font-size:12.5px;font-weight:400;margin-top:2px}
+.bandeau-action{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff5d6;border:1px solid #efd894;border-left:6px solid var(--jaune);border-radius:var(--r);padding:12px 16px;margin-bottom:14px}
+.bandeau-action b{display:block}.bandeau-action span{font-size:13.5px;color:var(--doux)}
+.alerte-sortie{display:block;font-size:12.5px;color:var(--ambre);font-weight:600}
+.reference{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.reference>div{border:1px solid var(--bord);border-radius:var(--r);padding:12px 14px;background:#fbfcfb}
+.reference p{margin:6px 0;font-size:13.5px;color:var(--doux)}
+.ecart{color:var(--ambre)!important;font-weight:600}.ok{color:var(--vert2)!important;font-weight:600}
+#assist-btn{position:fixed;right:20px;bottom:20px;z-index:40;display:flex;align-items:center;gap:8px;background:var(--vert);color:#fff;border:0;border-radius:999px;padding:11px 18px 11px 14px;font-weight:600;box-shadow:0 6px 18px rgba(14,59,46,.28)}
+#assist-btn svg{width:20px;height:20px;color:var(--jaune)}
+#assist-btn em{font-style:normal;background:var(--jaune);color:var(--vert);border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;font-size:12.5px;font-weight:700;padding:0 6px}
+#assist{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);z-index:45;background:#fff;border-left:1px solid var(--bord);box-shadow:-10px 0 30px rgba(14,30,24,.12);display:flex;flex-direction:column}
+#assist header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--vert);color:#fff;border-bottom:4px solid var(--jaune)}
+#assist header b{font-family:'Barlow Semi Condensed',Barlow,sans-serif;font-size:19px;display:block}#assist header small{opacity:.8}
+#assist header button{background:none;border:0;color:#fff;font-size:18px}
+.assist-corps{flex:1;overflow-y:auto;padding:14px 16px}.assist-corps h4{margin:0 0 8px;color:var(--vert2)}
+.conseil{border:1px solid var(--bord);border-left:5px solid var(--bleu);border-radius:8px;padding:9px 12px;margin-bottom:8px}
+.conseil.rouge{border-left-color:var(--rouge);background:var(--rouge-clair)}.conseil.ambre{border-left-color:var(--ambre);background:var(--ambre-clair)}
+.conseil small{font-size:11.5px;font-weight:700;color:var(--doux)}.conseil.rouge small{color:var(--rouge)}.conseil.ambre small{color:var(--ambre)}
+.conseil b{display:block;margin:1px 0 3px}.conseil p{margin:0 0 6px;font-size:13.5px}.conseil .btn{background:#fff}
+.aide{color:var(--doux);font-size:13.5px}
+@media (max-width:760px){#assist-btn{bottom:84px;right:12px}#assist-btn span{display:none}.bandeau-action{flex-direction:column;align-items:stretch}}
+@media print{#assist,#assist-btn{display:none!important}}
+.etapes-t{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:14px;align-items:start}.etapes-t h3{display:flex;gap:8px;align-items:center;margin-top:0}
+.pastille{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--jaune,#f2b705);color:#0e3b2e;font-size:14px}
+.fiche-t{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-top:1px solid #dde3df;flex-wrap:wrap}.fiche-t span{display:flex;gap:6px}
+.grille-t input{width:100%;min-width:80px;border:1px solid #c9d2cd;border-radius:6px;padding:5px 6px}.grille-t td.ctl{min-width:150px}.grille-t td.ctl small{display:block;font-size:12px}
+.grille-t b.r{color:#b42318}.grille-t b.a{color:#a15c07}.grille-t b.v{color:#157a43}tr.t-err td{background:#fdeceb}tr.t-dbl td{background:#fdf1dc}tr.t-ok td{background:#e3f3ea}
+@media (max-width:1000px){.etapes-t{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -201,6 +230,8 @@ tr.cliquable:hover td{background:#f9fafb}
 
 <div id="voile" class="cache"></div>
 <div id="toast" class="cache"></div>
+<button id="assist-btn" class="cache" onclick="ASSIST=true;majAssistant()" aria-label="Ouvrir l'assistant"></button>
+<aside id="assist" class="cache" role="dialog" aria-label="Assistant"></aside>
 
 <script>
 /* =========================================================
@@ -239,6 +270,7 @@ const DROITS = {
   carburant:  {superadmin:'rw', president:'r',  regisseur:'rw', logistique:'rw'},
   pannes:     {superadmin:'rwv',president:'rv', regisseur:'rw', logistique:'rw'},
   maintenance:{superadmin:'rw', president:'r',  regisseur:'rw', logistique:'r'},
+  terrain:    {superadmin:'rw', regisseur:'rw', logistique:'rw'},
   engins:     {superadmin:'rw', president:'r',  regisseur:'rw', logistique:'r'},
   rapports:   {superadmin:'r',  president:'r',  regisseur:'r',  logistique:'r'},
   utilisateurs:{superadmin:'rw'},
@@ -254,6 +286,7 @@ const MODULES = [
   {id:'carburant', titre:'Carburant', ic:'carbu', court:'Carburant'},
   {id:'pannes', titre:'Pannes et réparations', ic:'panne', court:'Pannes'},
   {id:'maintenance', titre:'Maintenance', ic:'maint', court:'Maintenance'},
+  {id:'terrain', titre:'Fiches de terrain', ic:'journal', court:'Fiches'},
   {id:'rapports', titre:'Rapports', ic:'rapport', court:'Rapports'},
   {id:'engins', titre:'Engins et barèmes', ic:'engin', court:'Engins'},
   {id:'utilisateurs', titre:'Utilisateurs et droits', ic:'users', court:'Utilisateurs'},
@@ -267,20 +300,20 @@ const MODULES = [
    ========================================================= */
 function donneesDemo(){
   return {
-    params:{prixLitre:850, tauxVide:0.4, tauxCharge:0.5, tauxLub:10, heuresJour:8, seuilEcart:15, seuilVisa:500000, alerteMaint:25},
+    params:{prixLitre:828, tauxVide:0.4, tauxCharge:0.5, tauxLub:10, heuresJour:8, seuilEcart:15, seuilVisa:500000, alerteMaint:25},
     utilisateurs:[
       {id:'u1', nom:'Selma KORONDO', login:'selma', role:'superadmin', actif:true},
       {id:'u2', nom:'Le Président du Conseil', login:'president', role:'president', actif:true},
       {id:'u3', nom:'Régisseur des engins', login:'regisseur', role:'regisseur', actif:true},
       {id:'u4', nom:'Spécialiste logistique', login:'logistique', role:'logistique', actif:true}
     ],
-    // Valeurs de démonstration : tarifs, puissance et prix d'achat sont à remplacer par les vrais chiffres.
+    // Gasoil au prix officiel CSPH (828 FCFA). Niveleuse et rouleau BW 65 H dans la grille de référence ; le reste est à confirmer.
     engins:[
       {id:'e1', code:'BUL-01', designation:'Bulldozer', marque:'Caterpillar D6R', immat:'CE 101 RE', compteur:4380, chauffeur:'Ndongo Paul', salaireJour:15000, tarifJour:500000, tarifHeure:0, cv:185, charge:'0.54', conso:'', achat:180000000, residuel:36000000, vie:12000, entretien:100},
       {id:'e2', code:'NIV-01', designation:'Niveleuse', marque:'Caterpillar 140K', immat:'CE 102 RE', compteur:3120, chauffeur:'Abena Joseph', salaireJour:15000, tarifJour:450000, tarifHeure:0, cv:183, charge:'0.54', conso:'', achat:150000000, residuel:30000000, vie:12000, entretien:60},
       {id:'e3', code:'CHG-01', designation:'Chargeuse', marque:'Caterpillar 950H', immat:'CE 103 RE', compteur:5640, chauffeur:'Mvondo Eric', salaireJour:15000, tarifJour:400000, tarifHeure:0, cv:197, charge:'0.54', conso:'', achat:140000000, residuel:28000000, vie:12000, entretien:40},
       {id:'e4', code:'PEL-01', designation:'Pelle hydraulique', marque:'Komatsu PC220', immat:'CE 104 RE', compteur:2210, chauffeur:'Ousmanou Ali', salaireJour:15000, tarifJour:0, tarifHeure:60000, cv:165, charge:'0.54', conso:'', achat:120000000, residuel:24000000, vie:10000, entretien:60},
-      {id:'e5', code:'CPT-01', designation:'Compacteur', marque:'Bomag BW 213', immat:'CE 105 RE', compteur:2990, chauffeur:'Zra Martin', salaireJour:12000, tarifJour:350000, tarifHeure:0, cv:150, charge:'0.54', conso:'', achat:90000000, residuel:18000000, vie:10000, entretien:50},
+      {id:'e5', code:'CPT-01', designation:'Compacteur', marque:'Bomag BW 65 H', immat:'CE 105 RE', compteur:2990, chauffeur:'Zra Martin', salaireJour:12000, tarifJour:40000, tarifHeure:0, cv:7, charge:'0.54', conso:'', achat:90000000, residuel:18000000, vie:10000, entretien:50},
       {id:'e6', code:'PCH-01', designation:'Porte-char', marque:'Mercedes Actros 3341', immat:'CE 201 RE', compteur:86400, chauffeur:'Bello Hamadou', salaireJour:15000, tarifJour:0, tarifHeure:0, cv:408, charge:'0.54', conso:'', achat:0, residuel:0, vie:0, entretien:0}
     ],
     missions:[
@@ -295,31 +328,31 @@ function donneesDemo(){
     ],
     carburant:[
       {id:'c0', date:'2026-11-01', type:'Approvisionnement cuve', bon:'FAC-2026-88', engin:'', mission:'', compteur:'', litres:5000, prixLitre:828, fournisseur:'Tradex Bertoua', obs:''},
-      {id:'c4', date:'2026-11-02', type:'Dotation engin', bon:'BC-0112', engin:'e1', mission:'m1', compteur:4310, litres:400, prixLitre:850, fournisseur:'', obs:'Plein du départ'},
-      {id:'c5', date:'2026-11-08', type:'Plein refait par le client au retour', bon:'Plein Phineas', engin:'e1', mission:'m1', compteur:4380, litres:400, prixLitre:850, fournisseur:'Station de Belabo', obs:''},
-      {id:'c1', date:'2026-11-10', type:'Dotation engin', bon:'BC-0114', engin:'e2', mission:'m2', compteur:3080, litres:300, prixLitre:850, fournisseur:'', obs:''},
-      {id:'c2', date:'2026-11-05', type:'Dotation engin', bon:'BC-0113', engin:'e4', mission:'m3', compteur:2190, litres:200, prixLitre:850, fournisseur:'', obs:''},
-      {id:'c3', date:'2026-11-06', type:'Achat direct à la station', bon:'TOT-5521', engin:'e4', mission:'m3', compteur:2201, litres:250, prixLitre:850, fournisseur:'Station Tradex Abong-Mbang', obs:''}
+      {id:'c4', date:'2026-11-02', type:'Dotation engin', bon:'BC-0112', engin:'e1', mission:'m1', compteur:4310, litres:400, prixLitre:828, fournisseur:'', obs:'Plein du départ'},
+      {id:'c5', date:'2026-11-08', type:'Plein refait par le client au retour', bon:'Plein Phineas', engin:'e1', mission:'m1', compteur:4380, litres:400, prixLitre:828, fournisseur:'Station de Belabo', obs:''},
+      {id:'c1', date:'2026-11-10', type:'Dotation engin', bon:'BC-0114', engin:'e2', mission:'m2', compteur:3080, litres:300, prixLitre:828, fournisseur:'', obs:''},
+      {id:'c2', date:'2026-11-05', type:'Dotation engin', bon:'BC-0113', engin:'e4', mission:'m3', compteur:2190, litres:200, prixLitre:828, fournisseur:'', obs:''},
+      {id:'c3', date:'2026-11-06', type:'Achat direct à la station', bon:'TOT-5521', engin:'e4', mission:'m3', compteur:2201, litres:250, prixLitre:828, fournisseur:'Station Tradex Abong-Mbang', obs:''}
     ],
     pannes:[
       {id:'p1', engin:'e1', mission:'m1', date:'2026-11-06', description:'Fuite sur vérin de lame', gravite:'Majeure', cout:180000, statut:'Clôturée', visa:'Non requis', reparateur:'Atelier régional'},
       {id:'p2', engin:'e3', mission:'', date:'2026-11-14', description:'Boîte de vitesses bloquée', gravite:'Immobilisante', cout:1250000, statut:'En réparation', visa:'En attente', reparateur:'CFAO Equipment'}
     ],
     maintenance:[
-      {id:'x1', engin:'e1', mission:'', type:'Vidange moteur', date:'2026-10-20', compteur:4150, prochaine:4400, cout:220000, prestataire:'Atelier régional', obs:''},
-      {id:'x2', engin:'e3', mission:'', type:'Révision générale', date:'2026-08-12', compteur:5400, prochaine:5650, cout:650000, prestataire:'CFAO Equipment', obs:''},
-      {id:'x3', engin:'e4', mission:'m3', type:'Graissage', date:'2026-11-06', compteur:2201, prochaine:'', cout:12000, prestataire:'Conducteur sur site', obs:''}
+      {id:'x1', engin:'e1', mission:'', type:'Vidange moteur', date:'2026-10-20', compteur:4150, prochaine:4400, cout:220000, prestataire:'Atelier régional', obs:'', statut:'Faite'},
+      {id:'x2', engin:'e3', mission:'', type:'Révision générale', date:'2026-08-12', compteur:5400, prochaine:5650, cout:650000, prestataire:'CFAO Equipment', obs:'', statut:'Faite'},
+      {id:'x3', engin:'e4', mission:'m3', type:'Graissage', date:'2026-11-06', compteur:2201, prochaine:'', cout:12000, prestataire:'Conducteur sur site', obs:'', statut:'Faite'}
     ],
     transports:[
-      {id:'t1', mission:'m1', porteChar:'e6', chauffeur:'Bello Hamadou', date:'2026-11-02', voyages:2, distVide:100, tauxVide:0.4, distCharge:100, tauxCharge:0.5, prixLitre:850, obs:'Aller + retour (1+1=2)'},
-      {id:'t2', mission:'m2', porteChar:'e6', chauffeur:'Bello Hamadou', date:'2026-11-10', voyages:1, distVide:95, tauxVide:0.4, distCharge:95, tauxCharge:0.5, prixLitre:850, obs:'Aller seulement, retour à prévoir'}
+      {id:'t1', mission:'m1', porteChar:'e6', chauffeur:'Bello Hamadou', date:'2026-11-02', voyages:2, distVide:100, tauxVide:0.4, distCharge:100, tauxCharge:0.5, prixLitre:828, obs:'Aller + retour (1+1=2)'},
+      {id:'t2', mission:'m2', porteChar:'e6', chauffeur:'Bello Hamadou', date:'2026-11-10', voyages:1, distVide:95, tauxVide:0.4, distCharge:95, tauxCharge:0.5, prixLitre:828, obs:'Aller seulement, retour à prévoir'}
     ],
     journal:[]
   };
 }
 
 /* Stockage local (protégé) */
-const CLE='cre-engins-v5';
+const CLE='cre-engins-v6';
 let D;
 function charger(){ try{ const s=localStorage.getItem(CLE); D=s?JSON.parse(s):donneesDemo(); }catch(e){ D=donneesDemo(); } }
 function sauver(){ try{ localStorage.setItem(CLE, JSON.stringify(D)); }catch(e){} }
@@ -373,7 +406,7 @@ function calcMission(m){
   const lth = heures*consoEngin(e);
   const bons = D.carburant.filter(c=>c.mission===m.id && (c.type==='Dotation engin'||c.type==='Achat direct à la station'));
   const rendus = D.carburant.filter(c=>c.mission===m.id && c.type==='Plein refait par le client au retour');
-  const pannes = D.pannes.filter(x=>x.mission===m.id && x.visa!=='Refusé'), entr = D.maintenance.filter(x=>x.mission===m.id);
+  const pannes = D.pannes.filter(x=>x.mission===m.id && x.visa!=='Refusé'), entr = D.maintenance.filter(x=>x.mission===m.id && x.statut!=='Prévue');
   let carb, litresReels=null, estime=false;
   const depart=bons.reduce((s,c)=>s+montantBon(c),0), litDep=bons.reduce((s,c)=>s+nb(c.litres),0), litRen=rendus.reduce((s,c)=>s+nb(c.litres),0);
   const rendu=Math.min(litRen*(litDep?depart/litDep:nb(P.prixLitre)), depart);
@@ -411,7 +444,7 @@ function calcMission(m){
     montant:recettes, coutExpl:charges, solde:net};
 }
 function prochaineMaint(e){
-  const l=D.maintenance.filter(x=>x.engin===e.id && x.prochaine).sort((a,b)=>nb(b.compteur)-nb(a.compteur))[0];
+  const l=D.maintenance.filter(x=>x.engin===e.id && x.prochaine && x.statut!=='Prévue').sort((a,b)=>nb(b.compteur)-nb(a.compteur))[0];
   return l? nb(l.prochaine) : null;
 }
 function statutEngin(e){
@@ -510,11 +543,12 @@ const FORMS = {
     {k:'statut',l:'Statut',t:'select',o:['Ouverte','En réparation','Clôturée']},
     {c:'visa',l:'Visa du Président',f:p=>nb(p.cout)>=D.params.seuilVisa?'Requis (coût ≥ '+fcfa(D.params.seuilVisa)+')':'Non requis'}
   ]},
-  maintenance:{titre:'intervention de maintenance', champs:[
+  maintenance:{titre:'entretien', champs:[
+    {k:'statut',l:'Cet entretien est-il fait ?',t:'select',o:[['Faite','Oui, il est fait'],['Prévue','Non, il est seulement programmé']]},
     {k:'engin',l:'Engin',t:'select',o:optEngins(),req:1},{k:'type',l:'Type d\'intervention',t:'select',o:['Vidange moteur','Graissage','Révision générale','Pneumatiques / chenilles','Filtres','Hydraulique','Autre']},
     {k:'date',l:'Date',t:'date',req:1},
     {k:'mission',l:'Faite pendant la sortie',t:'select',o:()=>[['','Aucune (entretien courant)'],...D.missions.map(m=>[m.id,(engin(m.engin)?.code||'')+' · '+m.client])]},
-    {k:'compteur',l:'Compteur à l\'intervention',t:'number'},{k:'prochaine',l:'Prochaine échéance (compteur)',t:'number'},
+    {k:'compteur',l:'Compteur à l\'intervention',t:'number'},{k:'prochaine',l:'Prochaine échéance (compteur, laisser vide : calcul automatique)',t:'number'},
     {k:'cout',l:'Coût (FCFA)',t:'number'},{k:'prestataire',l:'Prestataire'},{k:'obs',l:'Observations',t:'textarea',plein:1}
   ]},
   utilisateurs:{titre:'utilisateur', champs:[
@@ -544,7 +578,7 @@ function connexion(id){
   aller(MODULES.some(m=>m.id===h)&&peut(h,'r')?h:'bord');
 }
 function deconnexion(){
-  U=null; document.getElementById('app').classList.add('cache');
+  U=null; ASSIST=false; document.getElementById('assist').classList.add('cache'); document.getElementById('assist-btn').classList.add('cache'); document.getElementById('app').classList.add('cache');
   document.getElementById('ecran-connexion').classList.remove('cache'); afficherComptes();
 }
 
@@ -574,9 +608,10 @@ function menuPlus(){
 function rendre(){
   const c=document.getElementById('contenu');
   const f={bord:vueBord, engins:vueEngins, missions:FICHE?vueFiche:vueMissions, transports:vueTransports,
-    carburant:vueCarburant, pannes:vuePannes, maintenance:vueMaintenance,
+    carburant:vueCarburant, pannes:vuePannes, maintenance:vueMaintenance, terrain:vueTerrain,
     rapports:vueRapports, utilisateurs:vueUtilisateurs, journal:vueJournal, parametres:vueParametres}[MOD];
   c.innerHTML = f();
+  majAssistant();
   const r=document.getElementById('recherche'); if(r){ r.value=FILTRE.q; r.focus(); r.setSelectionRange(r.value.length,r.value.length); }
 }
 const FILTRE={q:'',s:''};
@@ -619,7 +654,7 @@ function vueBord(){
   D.pannes.filter(p=>p.visa==='En attente').forEach(p=>al.push(['ambre',`Réparation à viser par le Président : ${nomEngin(p.engin)}, ${esc(p.description)} (${fcfa(p.cout)})`,`onclick="aller('pannes')" style="cursor:pointer"`]));
   D.pannes.filter(p=>p.gravite==='Immobilisante'&&p.statut!=='Clôturée').forEach(p=>al.push(['rouge',`${engin(p.engin)?.code} immobilisé : ${esc(p.description)}`,`onclick="aller('pannes')" style="cursor:pointer"`]));
   D.engins.forEach(e=>{ const pm=prochaineMaint(e); if(pm && nb(e.compteur)>=pm-D.params.alerteMaint) al.push(['ambre',`Entretien à prévoir sur ${e.code} : compteur ${fmt(e.compteur)}, échéance ${fmt(pm)}`,`onclick="aller('maintenance')" style="cursor:pointer"`]); });
-  const horsM=D.maintenance.filter(x=>!x.mission).reduce((s,x)=>s+nb(x.cout),0), horsP=D.pannes.filter(x=>!x.mission&&x.visa!=='Refusé').reduce((s,x)=>s+nb(x.cout),0);
+  const horsM=D.maintenance.filter(x=>!x.mission && x.statut!=='Prévue').reduce((s,x)=>s+nb(x.cout),0), horsP=D.pannes.filter(x=>!x.mission&&x.visa!=='Refusé').reduce((s,x)=>s+nb(x.cout),0);
   const pe = D.engins.filter(e=>!estPorte(e)).map(e=>{ const l=ms.filter(x=>x.m.engin===e.id); return {e, n:l.length, rec:l.reduce((s,x)=>s+x.r.recettes,0), ch:l.reduce((s,x)=>s+x.r.charges,0)}; }).filter(x=>x.n);
   const max=Math.max(1,...pe.map(x=>Math.max(x.rec,x.ch)));
   const pn=prev.reduce((s,x)=>s+x.r.net,0);
@@ -819,31 +854,89 @@ function registres(nom){
   };
   return R[nom];
 }
+
+/* ---------- Fiches de terrain (coupure d'électricité ou d'internet) ---------- */
+const LOGO_CRE='data:image/png;base64,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';
+function numeroFiche(nom){
+  const pre={carburant:'CARB',pannes:'PAN',maintenance:'ENT'}[nom]||'FT', an=new Date().getFullYear();
+  D.fiches=D.fiches||[]; const n=D.fiches.filter(f=>f.numero.startsWith(pre+'-'+an)).length+1;
+  const numero=`${pre}-${an}-${String(n).padStart(4,'0')}`;
+  D.fiches.unshift({numero, registre:nom, editee:auj(), par:U.nom, reprise:'', lignes:0}); sauver(); return numero;
+}
+const NORM=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+function lireDateT(t){ const m=String(t||'').trim().match(/^(\d{1,2})[\/\-. ](\d{1,2})(?:[\/\-. ](\d{2,4}))?$/); if(!m) return null; let a=m[3]?+m[3]:new Date().getFullYear(); if(a<100)a+=2000; return `${a}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`; }
+function lireNbT(t){ const x=String(t||'').replace(/fcfa|l$/i,'').replace(/[\s\u202f\u00a0]/g,'').replace(',','.'); return x===''?null:(isNaN(+x)?NaN:+x); }
+function trouverEnginT(t){ const n=NORM(t); if(!n) return null; let r=D.engins.filter(e=>n.includes(NORM(e.code))); if(!r.length) r=D.engins.filter(e=>NORM(e.designation).includes(n)||n.includes(NORM(e.designation))); return r.length===1?r[0]:undefined; }
+let TERRAIN=null;
+const COLS_T=[['date','Date','jj/mm/aaaa'],['type','Type','dotation, achat, cuve, plein…'],['bon','N° de bon',''],['engin','Engin','BUL-01'],['sortie','Sortie (client)','Phineas'],['compteur','Compteur',''],['litres','Litres',''],['prix','Prix du litre','828']];
+const TYPES_C=['Dotation engin','Achat direct à la station','Approvisionnement cuve','Plein refait par le client au retour'];
+function verifLigneT(v){
+  const err=[]; const d=lireDateT(v.date); if(!d) err.push('date illisible');
+  const ty=TYPES_C.find(o=>NORM(o).startsWith(NORM(v.type))||NORM(o).includes(NORM(v.type)))||(NORM(v.engin)?'Dotation engin':''); if(!NORM(v.type)&&!ty) err.push('type à remplir');
+  const cuve=['','cuve','cuveduparc'].includes(NORM(v.engin)); const e=cuve?null:trouverEnginT(v.engin); if(!cuve&&!e) err.push('engin introuvable (écrire le code)');
+  let m=null; if(NORM(v.sortie)){ const c=D.missions.filter(x=>NORM(x.client+x.lieu).includes(NORM(v.sortie))&&(!e||x.engin===e.id)); if(c.length===1) m=c[0]; else err.push(c.length?'plusieurs sorties : préciser':'sortie introuvable'); }
+  const l=lireNbT(v.litres); if(l==null||isNaN(l)||l<=0) err.push('litres à remplir');
+  const p=lireNbT(v.prix); const prix=p==null||isNaN(p)?D.params.prixLitre:p;
+  const doublon=v.bon&&D.carburant.some(b=>NORM(b.bon)===NORM(v.bon));
+  return {err, doublon, data:{id:'c'+Date.now()+Math.random().toString(36).slice(2,6), date:d, type:ty, bon:v.bon||'', engin:e?e.id:'', mission:m?m.id:'', compteur:lireNbT(v.compteur)||'', litres:l, prixLitre:prix, fournisseur:'', obs:'Repris de la fiche de terrain '+(TERRAIN.numero||'')}};
+}
+function vueTerrain(){
+  const F=D.fiches||[];
+  if(TERRAIN) return `<div class="carte"><div class="entete-carte"><h3>Recopier une fiche papier : bons de carburant</h3><button class="btn petit" onclick="TERRAIN=null;rendre()">Fermer</button></div>
+    <div class="champs" style="margin-bottom:10px"><div class="champ"><label>N° de la fiche</label><input value="${esc(TERRAIN.numero)}" oninput="TERRAIN.numero=this.value.toUpperCase()"></div></div>
+    <div class="tableau"><table class="grille-t"><thead><tr><th>N°</th><th>Contrôle</th>${COLS_T.map(c=>`<th>${c[1]}</th>`).join('')}</tr></thead><tbody>
+    ${TERRAIN.lignes.map((l,i)=>{const r=TERRAIN.res?.[i]; return `<tr class="${r?(r.err.length?'t-err':r.doublon?'t-dbl':'t-ok'):''}"><td>${i+1}</td><td class="ctl">${r?(r.err.length?`<b class="r">À corriger</b><small>${r.err.join(' ; ')}</small>`:r.doublon?'<b class="a">Déjà enregistrée</b>':r.fait?'<b class="v">Enregistrée</b>':`<b class="v">Prête</b><small>${dec(r.data.litres)} L × ${dec(r.data.prixLitre)}</small>`):''}</td>
+      ${COLS_T.map(c=>`<td><input value="${esc(l[c[0]]||'')}" placeholder="${c[2]}" oninput="TERRAIN.lignes[${i}]['${c[0]}']=this.value;TERRAIN.res=null"></td>`).join('')}</tr>`;}).join('')}</tbody></table></div>
+    <div class="boutons" style="margin-top:10px"><button class="btn" onclick="TERRAIN.lignes.push(...Array.from({length:5},()=>({})));rendre()">5 lignes de plus</button>
+    <button class="btn" onclick="TERRAIN.res=TERRAIN.lignes.map(l=>Object.values(l).some(x=>x)?verifLigneT(l):null);rendre()">Vérifier</button>
+    ${TERRAIN.res&&TERRAIN.res.some(r=>r&&!r.err.length&&!r.doublon&&!r.fait)?`<button class="btn prim" onclick="enregistrerT()">Enregistrer les lignes prêtes</button>`:''}</div>
+    <p class="aide">Écrivez comme sur le papier : « bul-01 », « 12/11 », « 1 250 000 » sont compris. Dans l'application, on peut aussi choisir le fichier Excel ou le PDF rempli : il est lu tout seul.</p></div>`;
+  const reg=[['carburant','Carburant'],['pannes','Pannes et réparations'],['maintenance','Entretien']];
+  return `<div class="etapes-t">
+  <div class="carte"><h3><span class="pastille">1</span>Avant de partir</h3><p class="aide">Chaque fiche reçoit un numéro, imprimé dessus. Papier à imprimer ou Excel pour un portable sans connexion.</p>
+    ${reg.map(([r,t])=>`<div class="fiche-t"><b>${t}</b><span><button class="btn petit" onclick="exporter('${r}',true,'pdf');setTimeout(rendre,500)">Imprimer</button><button class="btn petit" onclick="exporter('${r}',true,'xls');setTimeout(rendre,500)">Excel</button></span></div>`).join('')}</div>
+  <div class="carte"><h3><span class="pastille">2</span>Au retour : fichier rempli</h3><p class="aide">Dans l'application, on choisit la fiche Excel ou le PDF rempli : chaque ligne est lue, contrôlée, puis montrée avant d'être enregistrée. Une fiche déjà reprise est signalée par son numéro.</p></div>
+  <div class="carte"><h3><span class="pastille">3</span>Au retour : fiche papier</h3><p class="aide">Recopiez la fiche dans une grille qui a les mêmes colonnes, puis joignez sa photo.</p>
+    <button class="btn prim" onclick="TERRAIN={numero:'',lignes:Array.from({length:6},()=>({})),res:null};rendre()">Recopier une fiche papier</button></div></div>
+  <div class="carte" style="margin-top:14px"><h3>Fiches éditées et reprises</h3>${F.length?`<div class="tableau"><table><thead><tr><th>N° de fiche</th><th>Registre</th><th>Éditée le</th><th>État</th><th class="num">Lignes</th></tr></thead><tbody>
+    ${F.map(f=>`<tr><td><b>${f.numero}</b></td><td>${f.registre}</td><td>${dfr(f.editee)}<small class="sous">${esc(f.par)}</small></td><td><span class="etiq ${f.reprise?'e-vert':'e-ambre'}">${f.reprise?'Reprise le '+dfr(f.reprise):'Sur le terrain'}</span></td><td class="num">${f.lignes||'–'}</td></tr>`).join('')}</tbody></table></div>`:'<p class="aide">Aucune fiche pour le moment.</p>'}</div>`;
+}
+function enregistrerT(){
+  let n=0; TERRAIN.res.forEach((r,i)=>{ if(r&&!r.err.length&&!r.doublon&&!r.fait){ D.carburant.push(r.data); r.fait=true; n++; } });
+  const f=(D.fiches||[]).find(x=>x.numero===TERRAIN.numero); if(f){ f.reprise=auj(); f.lignes+=n; }
+  journaliser('Reprise de fiche de terrain','Carburant',(TERRAIN.numero||'fiche papier')+' : '+n+' ligne(s)'); sauver(); rendre(); toast(n+' ligne(s) enregistrée(s)');
+}
+
 function exporter(nom, vierge, format){
   const feuilles=registres(nom), titreDoc={carburant:'Registre du carburant',pannes:'Registre des pannes et réparations',maintenance:'Registre de la maintenance'}[nom];
-  const entete=`<table class="en"><tr><td><b>RÉPUBLIQUE DU CAMEROUN</b><br><i>Paix – Travail – Patrie</i><br><b>CONSEIL RÉGIONAL DE L'EST</b><br><i>Parc d'engins</i></td><td></td><td style="text-align:right"><b>REPUBLIC OF CAMEROON</b><br><i>Peace – Work – Fatherland</i><br><b>EAST REGIONAL COUNCIL</b><br><i>Equipment fleet</i></td></tr></table>`;
+  const L_=(fr,en)=>`<tr><td>${fr}</td><td></td><td>${en}</td></tr>`, ET='<span class="et">**** **** **** ****</span>';
+  const numero=vierge?numeroFiche(nom):'';
+  const entete=`<table class="en"><tr><td class="bl">REPUBLIQUE DU CAMEROUN<br><span>Paix-Travail-Patrie</span><br>${ET}<br>REGION DE L’EST<br>${ET}<br>CONSEIL REGIONAL DE L’EST<br>${ET}<br>CABINET PRESIDENT<br>${ET}</td>
+    <td class="lg"><img src="${LOGO_CRE}" alt=""></td><td class="bl">REPUBLIC OF CAMEROON<br><span>Peace- Work-Fatherland</span><br>${ET}<br>EAST REGION<br>${ET}<br>EAST REGIONAL COUNCIL<br>${ET}<br>PRESIDENT’S OFFICE<br>${ET}</td></tr></table>`;
+  const pied=`<div class="pied">91 Rue Rénguéngué, BP : 507 Bertoua &nbsp; Tél. : (237) 222 24 19 32 – 670 00 11 32 &nbsp; Fax : (237) 222 24 19 30<br><b>Email : conseilregionalest96@yahoo.com</b></div>`;
   const fv=(v,ty)=>v==null||v===''?'':ty==='d'?dfr(v):ty==='n'?(typeof v==='number'?dec(v):v):esc(v);
   const corps=feuilles.map(([n,titre,cols,src],i)=>{
     const lignes=vierge?Array.from({length:12},()=>({})):src();
     const tot=c=>lignes.reduce((s,l)=>s+nb(l[c.k]),0);
-    return `<div class="feuille" ${i?'style="page-break-before:always"':''}>${entete}<h2>${titre}</h2><p class="per">${vierge?'Période du ......../......../............ au ......../......../............ &nbsp; Établi par : ........................................':'Toutes les dates'}</p>
+    return `<div class="feuille" ${i?'style="page-break-before:always"':''}>${entete}<h2>${titre}</h2><p class="per">${vierge?`<b>Fiche n° ${numero}</b> &nbsp; Période du ......../......../............ au ......../......../............ &nbsp; Agent : ........................................`:'Toutes les dates'}</p>
     <table class="reg"><thead><tr><th>N°</th>${cols.map(c=>`<th>${c.t}</th>`).join('')}</tr></thead><tbody>
     ${lignes.map((l,k)=>`<tr${vierge?' class="v"':''}><td>${k+1}</td>${cols.map(c=>`<td class="${c.ty==='n'?'n':''}${c.f?' calc':''}">${vierge?'':fv(l[c.k],c.ty)}</td>`).join('')}</tr>`).join('')}
     <tr class="tot"><td></td>${cols.map((c,j)=>`<td class="n">${j===0?'<b>TOTAL</b>':c.tot&&!vierge?'<b>'+dec(tot(c))+'</b>':''}</td>`).join('')}</tr></tbody></table>
     ${vierge&&cols.some(c=>c.f)?`<p class="per">Calculs : ${cols.filter(c=>c.f).map(c=>c.t+' = '+c.f.replace(/\*/g,' × ')).join(' ; ')}.</p>`:''}
-    <table class="sign"><tr><th>Établi par</th><th>Le Régisseur des engins</th><th>Visa du Président du Conseil</th></tr><tr><td></td><td></td><td></td></tr></table></div>`;
+    <table class="sign"><tr><th>Établi par</th><th>Le Régisseur des engins</th><th>Visa du Président du Conseil</th></tr><tr><td></td><td></td><td></td></tr></table>${pied}</div>`;
   }).join('');
-  const css=`body{font-family:Arial,sans-serif;font-size:10px;margin:10mm}.en{width:100%;font-size:10px}h2{text-align:center;color:#14532d;font-size:15px;margin:8px 0 2px}.per{text-align:center;color:#6b7280;margin:2px 0 8px}
+  const css=`body{font-family:Arial,sans-serif;font-size:10px;margin:10mm}.en{width:100%;border-collapse:collapse}.en td.bl{width:38%;text-align:center;font:bold 9px/1.25 'Times New Roman',serif;vertical-align:top}.en td.bl span{font-size:8.5px}.en .et{font-size:6px}.en td.lg{text-align:center;vertical-align:top}.en img{width:110px}
+  .pied{margin-top:12px;border-top:1px solid #9ca3af;padding-top:4px;text-align:center;font:italic 9px/1.35 'Times New Roman',serif;color:#374151}h2{text-align:center;color:#14532d;font-size:15px;margin:8px 0 2px}.per{text-align:center;color:#6b7280;margin:2px 0 8px}
   table.reg{width:100%;border-collapse:collapse}table.reg th{background:#14532d;color:#fff;border:1px solid #9ca3af;padding:3px;font-size:9px}table.reg td{border:1px solid #9ca3af;padding:3px}td.n{text-align:right}td.calc{background:#f0fdf4}tr.v td{height:26px}tr.tot td{background:#dcfce7}
   table.sign{width:100%;border-collapse:collapse;margin-top:14px}table.sign th{background:#f0fdf4;border:1px solid #9ca3af;padding:4px}table.sign td{border:1px solid #9ca3af;height:60px}@page{size:A4 landscape;margin:8mm}`;
   const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${titreDoc}</title><style>${css}</style></head><body>${corps}</body></html>`;
   if(format==='xls'){
     const blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel'}); const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob); a.download=`registre-${nom}${vierge?'-vierge':''}.xls`; document.body.appendChild(a); a.click(); a.remove(); toast('Fichier Excel téléchargé');
+    a.href=URL.createObjectURL(blob); a.download=vierge?`fiche-${nom}-${numero}.xls`:`registre-${nom}.xls`; document.body.appendChild(a); a.click(); a.remove(); toast('Fichier Excel téléchargé');
   } else { const w=window.open('','_blank'); if(!w){ toast('Autorisez les fenêtres pour imprimer'); return; } w.document.write(html+'<script>setTimeout(()=>print(),300)<\/script>'); w.document.close(); }
 }
 const barreExports = nom => `<div class="exports"><span>Registre :</span><button class="btn petit" onclick="exporter('${nom}',false,'xls')">Excel</button><button class="btn petit" onclick="exporter('${nom}',false,'pdf')">PDF à imprimer</button>
-  <span class="sep">Fiche vierge à remplir à la main :</span><button class="btn petit" onclick="exporter('${nom}',true,'xls')">Excel</button><button class="btn petit" onclick="exporter('${nom}',true,'pdf')">PDF</button></div>`;
+  <span class="sep">Fiche vierge numérotée, pour le terrain :</span><button class="btn petit" onclick="exporter('${nom}',true,'xls')">Excel</button><button class="btn petit" onclick="exporter('${nom}',true,'pdf')">PDF</button></div>`;
 
 function tableauExcel(cols, lignes){
   if(!lignes.length) return '<div class="carte vide">Rien à afficher.</div>';
@@ -887,14 +980,152 @@ function vuePannes(){
   ], l, 'pannes');
 }
 function viserPanne(id,v){ const p=D.pannes.find(x=>x.id===id); p.visa=v; journaliser(v==='Visé'?'Visa accordé':'Visa refusé','Pannes',nomEngin(p.engin)+' · '+fcfa(p.cout)); sauver(); rendre(); toast(v==='Visé'?'Réparation visée':'Réparation refusée'); }
-function vueMaintenance(){
-  const l=D.maintenance.filter(correspond).sort((a,b)=>b.date.localeCompare(a.date));
-  return bandeauLecture('maintenance')+barreExports('maintenance')+outils('maintenance')+tableau([
-    {l:'Date',f:x=>dfr(x.date)},{l:'Engin',f:x=>nomEngin(x.engin)},{l:'Sortie',f:x=>x.mission?sortieTxt(x.mission):'Hors sortie'},{l:'Intervention',f:x=>esc(x.type)},
-    {l:'Compteur',n:1,f:x=>fmt(x.compteur)},{l:'Prochaine échéance',n:1,f:x=>{const e=engin(x.engin); const proche=e&&x.prochaine&&nb(e.compteur)>=nb(x.prochaine)-D.params.alerteMaint; return x.prochaine?(proche?`<span class="etiq e-ambre">${fmt(x.prochaine)}</span>`:fmt(x.prochaine)):'–';}},
-    {l:'Coût',n:1,f:x=>fcfa(x.cout)},{l:'Prestataire',f:x=>esc(x.prestataire)}
-  ], l, 'maintenance');
+/* ---------- Entretien automatique (plan d'entretien Caterpillar PM1 à PM4) ---------- */
+const PLAN_H=[['Graissage','Graisser les articulations et contrôler les niveaux',50,30],['Vidange moteur','PM1 : vidange de l\'huile moteur et filtre à huile',250,180],
+  ['Filtres','PM2 : filtres à carburant, courroies, liquide de refroidissement',500,180],['Révision générale','PM3 : révision (soupapes, transmission, freins)',1000,365],
+  ['Hydraulique','PM4 : vidange de l\'huile hydraulique et des filtres',2000,365]];
+const PLAN_KM=[['Vidange moteur','Vidange de l\'huile moteur et filtre à huile',10000,180],['Filtres','Filtres à air et à carburant',20000,365],['Révision générale','Révision : freins, embrayage, boîte, ponts',40000,365]];
+const EN_KM=['Porte-char','Camion benne','Tracteur'];
+let VUE_M='plan';
+function planDe(e){ return EN_KM.includes(e.designation)?PLAN_KM:PLAN_H; }
+function rythmeEngin(e){
+  const ms=D.missions.filter(m=>m.engin===e.id && m.statut!=='Annulée' && m.cptDepart!=='' && m.cptRetour!=='' && m.cptRetour!=null);
+  if(!ms.length) return 0;
+  const debut=ms.map(m=>m.debut).sort()[0], jours=Math.max(30,(Date.now()-new Date(debut))/864e5);
+  return ms.reduce((s,m)=>s+Math.max(0,nb(m.cptRetour)-nb(m.cptDepart)),0)/jours;
 }
+function previsions(){
+  const auj=new Date(), lignes=[];
+  D.engins.forEach(e=>{
+    const u=EN_KM.includes(e.designation)?'km':'h', seuil=nb(D.params.alerteMaint)*(u==='km'?40:1), v=rythmeEngin(e), cpt=nb(e.compteur);
+    planDe(e).forEach(([type,lib,iv,ij])=>{
+      const der=D.maintenance.filter(x=>x.engin===e.id&&x.type===type&&x.statut!=='Prévue').sort((a,b)=>b.date.localeCompare(a.date))[0];
+      let ech, rq='';
+      if(der&&der.compteur!==''&&der.compteur!=null) ech=nb(der.prochaine)||nb(der.compteur)+iv;
+      else { ech=Math.ceil(cpt/iv)*iv; if(ech<=cpt) ech+=iv; rq='aucun entretien noté : échéance calée sur le compteur'; }
+      const reste=ech-cpt, dCal=der?new Date(new Date(der.date).getTime()+ij*864e5):null;
+      const dCpt=v>0?new Date(auj.getTime()+Math.max(0,Math.floor(reste/v))*864e5):null;
+      const ds=[dCpt,dCal].filter(Boolean), dp=ds.length?new Date(Math.min(...ds)):null;
+      const etat=(reste<=0||(dCal&&dCal<auj))?'En retard':(reste<=seuil||(dp&&dp-auj<=14*864e5))?'Bientôt':'À jour';
+      let pendant=null;
+      if(dp) D.missions.filter(m=>m.engin===e.id&&(m.statut==='Planifiée'||m.statut==='En cours')).forEach(m=>{ const f=new Date(m.fin||m.debut); if(new Date(m.debut)<=dp&&dp<=new Date(f.getTime()+864e5)) pendant=m; });
+      const couts=D.maintenance.filter(x=>x.type===type&&x.statut!=='Prévue'&&nb(x.cout)>0&&engin(x.engin)?.designation===e.designation).map(x=>nb(x.cout));
+      lignes.push({e, u, type, lib, iv, ech, reste, cpt, dp, etat, rq, v, pendant,
+        cout: couts.length?Math.round(couts.reduce((a,b)=>a+b,0)/couts.length):0,
+        prevue: D.maintenance.find(x=>x.engin===e.id&&x.type===type&&x.statut==='Prévue')});
+    });
+  });
+  const o={'En retard':0,'Bientôt':1,'À jour':2};
+  return lignes.sort((a,b)=>o[a.etat]-o[b.etat]||(a.dp||9e15)-(b.dp||9e15));
+}
+function iso(d){ return d.toISOString().slice(0,10); }
+function programmerTout(){
+  let n=0; const auj=iso(new Date());
+  previsions().forEach(l=>{ if(l.etat==='À jour'||l.prevue) return;
+    D.maintenance.push({id:'x'+Date.now()+n, engin:l.e.id, mission:'', type:l.type, date:l.dp?iso(l.dp)<auj?auj:iso(l.dp):auj, compteur:'', prochaine:l.ech, cout:l.cout, prestataire:'', obs:'Programmé automatiquement par le plan d\'entretien', statut:'Prévue'}); n++; });
+  journaliser('Programmation','Maintenance',n+' entretien(s)'); sauver(); rendre(); majAssistant(); toast(n?n+' entretien(s) inscrit(s) au registre comme « à faire »':'Tout était déjà programmé');
+}
+function cestFait(eid, type){
+  const l=previsions().find(x=>x.e.id===eid&&x.type===type);
+  ouvrirModale(`${l.e.code} : ${type}`, `<p style="color:var(--doux);margin-top:0">${esc(l.lib)}</p><div class="champs">
+    <div class="champ"><label>Date</label><input type="date" id="cf-d" value="${iso(new Date())}"></div>
+    <div class="champ"><label>Compteur ce jour-là (${l.u})</label><input type="number" id="cf-c" value="${l.cpt}"></div>
+    <div class="champ"><label>Coût (FCFA)</label><input type="number" id="cf-m" value="${l.cout}"></div>
+    <div class="champ"><label>Prestataire</label><input id="cf-p"></div></div>`,
+    `<button class="btn" onclick="fermer()">Annuler</button><button class="btn prim" onclick="validerFait('${eid}','${type}')">C'est fait</button>`);
+}
+function validerFait(eid, type){
+  const g=id=>document.getElementById(id).value, l=previsions().find(x=>x.e.id===eid&&x.type===type);
+  D.maintenance=D.maintenance.filter(x=>!(x.engin===eid&&x.type===type&&x.statut==='Prévue'));
+  const c=nb(g('cf-c'));
+  D.maintenance.push({id:'x'+Date.now(), engin:eid, mission:'', type, date:g('cf-d'), compteur:c, prochaine:c+l.iv, cout:nb(g('cf-m')), prestataire:g('cf-p'), obs:'', statut:'Faite'});
+  const e=engin(eid); if(c>nb(e.compteur)) e.compteur=c;
+  journaliser('Entretien fait','Maintenance',e.code+' · '+type); sauver(); fermer(); rendre(); majAssistant(); toast(type+' noté pour '+e.code+'. Prochaine échéance : '+fmt(c+l.iv)+' '+l.u);
+}
+function vueMaintenance(){
+  const ong=`<div class="onglets">${[['plan','Échéances'],['registre','Registre des entretiens'],['regles','Règles du plan d\'entretien']].map(([k,t])=>`<button class="${VUE_M===k?'actif':''}" onclick="VUE_M='${k}';rendre()">${t}</button>`).join('')}</div>`;
+  if(VUE_M==='registre'){
+    const l=D.maintenance.filter(correspond).sort((a,b)=>b.date.localeCompare(a.date));
+    return ong+bandeauLecture('maintenance')+barreExports('maintenance')+outils('maintenance')+tableau([
+      {l:'Date',f:x=>dfr(x.date)},{l:'État',f:x=>x.statut==='Prévue'?'<span class="etiq e-ambre">À faire</span>':'<span class="etiq e-vert">Fait</span>'},{l:'Engin',f:x=>nomEngin(x.engin)},{l:'Sortie',f:x=>x.mission?sortieTxt(x.mission):'Hors sortie'},{l:'Intervention',f:x=>esc(x.type)},
+      {l:'Compteur',n:1,f:x=>fmt(x.compteur)},{l:'Prochaine échéance',n:1,f:x=>x.prochaine?fmt(x.prochaine):'–'},
+      {l:'Coût',n:1,f:x=>fcfa(x.cout)},{l:'Prestataire',f:x=>esc(x.prestataire)}
+    ], l, 'maintenance');
+  }
+  if(VUE_M==='regles'){
+    const lig=(des,p)=>p.map(([t,l,iv,ij])=>`<tr><td>${des}</td><td>${t}</td><td>${esc(l)}</td><td class="n">${fmt(iv)} ${des.includes('Camion')?'km':'h'}</td><td class="n">${ij} jours</td></tr>`).join('');
+    return ong+`<div class="carte"><p style="color:var(--doux);margin-top:0">Chaque ligne dit quoi faire et à quel rythme. Les règles suivent l'entretien planifié Caterpillar (250, 500, 1 000 et 2 000 heures) ; pour les camions, ce sont des valeurs prudentes en kilomètres. Dans l'application, elles se modifient pour suivre le carnet de chaque engin.</p>
+      <div class="tableau"><table><thead><tr><th>Type d'engin</th><th>Opération</th><th>Ce qu'il faut faire</th><th class="n">Tous les</th><th class="n">Ou au plus tard</th></tr></thead>
+      <tbody>${lig('Engins de chantier',PLAN_H)}${lig('Camions et porte-char',PLAN_KM)}</tbody></table></div></div>`;
+  }
+  const P=previsions(), ret=P.filter(l=>l.etat==='En retard'), bt=P.filter(l=>l.etat==='Bientôt'), aP=[...ret,...bt].filter(l=>!l.prevue), ecr=peut('maintenance','w');
+  const vis=P.filter(l=>l.etat!=='À jour');
+  return ong+`<div class="grille-kpi">
+    <div class="kpi"><small>En retard</small><b style="color:${ret.length?'var(--rouge)':'var(--vert2)'}">${ret.length}</b><span>échéance dépassée</span></div>
+    <div class="kpi"><small>À faire bientôt</small><b style="color:var(--ambre)">${bt.length}</b><span>dans les 14 jours ou presque au compteur</span></div>
+    <div class="kpi"><small>Budget à prévoir</small><b>${fcfa([...ret,...bt].reduce((s,l)=>s+l.cout,0))}</b><span>d'après les factures passées</span></div></div>
+  ${ecr&&aP.length?`<div class="bandeau-action"><div><b>${aP.length} entretien(s) ne sont pas encore inscrits au registre.</b><span>Un clic les ajoute comme « à faire » avec la date estimée. Il suffira de cliquer sur « C'est fait » le jour venu.</span></div><button class="btn prim" onclick="programmerTout()">Tout programmer</button></div>`:''}
+  <div class="carte"><h3>Ce qui demande votre attention</h3>${vis.length?`<div class="tableau"><table><thead><tr><th>Engin</th><th>Opération</th><th>État</th><th class="n">Compteur</th><th class="n">Échéance</th><th>Date estimée</th><th>Remarque</th><th></th></tr></thead><tbody>
+  ${vis.map(l=>`<tr><td><b>${l.e.code}</b><small class="sous">${l.e.designation}</small></td><td>${l.type}<small class="sous">${esc(l.lib)}</small></td>
+    <td><span class="etiq ${l.etat==='En retard'?'e-rouge':'e-ambre'}">${l.etat}</span>${l.prevue?'<small class="sous">déjà programmé</small>':''}</td>
+    <td class="n">${fmt(l.cpt)} ${l.u}</td><td class="n">${fmt(l.ech)} ${l.u}<small class="sous">${l.reste>=0?'dans '+fmt(l.reste)+' '+l.u:fmt(-l.reste)+' '+l.u+' de retard'}</small></td>
+    <td>${l.dp?dfr(iso(l.dp)):'inconnue'}<small class="sous">${l.v?l.v.toFixed(1).replace('.',',')+' '+l.u+' par jour':'rythme inconnu'}</small></td>
+    <td style="max-width:220px">${l.pendant?`<span class="alerte-sortie">Tombe pendant la sortie ${esc(l.e.code+' · '+l.pendant.client)} : à faire avant le départ</span>`:''}${l.rq?`<small class="sous">${l.rq}</small>`:''}</td>
+    <td>${ecr?`<button class="btn petit prim" onclick="cestFait('${l.e.id}','${l.type}')">C'est fait</button>`:''}</td></tr>`).join('')}</tbody></table></div>`:'<p style="color:var(--doux)">Tous les engins sont à jour.</p>'}
+  <p style="color:var(--doux);font-size:13px">Les échéances se recalculent à chaque entretien noté et à chaque compteur relevé en fin de sortie. Les dates sont estimées d'après le rythme de travail de chaque engin.</p></div>`;
+}
+
+/* ---------- Données de référence et assistant ---------- */
+const REF={prix:828, smig:60000, plancher:2308,
+  engins:{Compacteur:{m:'Rouleau duplex BOMAG BW 65 H',mots:['bw 65'],min:40000,max:75000,cv:'5,3 kW (7,2 ch)',cond:'sans conducteur'},
+    Tractopelle:{m:'Tractopelle de la classe 8 à 9 tonnes',mots:['tractopelle'],min:250000,max:300000,cv:'74 à 81 kW (100 à 110 ch)',cond:'conducteur compris, carburant en plus'},
+    'Camion benne':{m:'Camion benne Sinotruk Hohan 6x4',mots:['sinotruk','howo'],min:150000,max:200000,cv:'336 à 430 ch',cond:'par jour'},
+    Niveleuse:{m:'Niveleuse Caterpillar 120 / 140',mots:['120','140'],min:350000,max:500000,cv:'130 à 190 kW (175 à 250 ch)',cond:'conducteur compris, carburant en plus'}}};
+function refEngin(e){ const f=REF.engins[e.designation]; if(!f) return null; const mq=(e.marque||'').toLowerCase(); return (!mq||f.mots.some(x=>mq.includes(x)))?f:{...f,diff:1}; }
+const NIV={rouge:'Urgent',ambre:'À regarder',bleu:'Conseil'};
+function cons(n,t,x,b){ return {n,t,x,b}; }
+function conseils(mod){
+  const L=[];
+  if(mod==='maintenance'||mod==='bord'){
+    const P=previsions(), aP=P.filter(l=>l.etat!=='À jour'&&!l.prevue);
+    if(aP.length&&peut('maintenance','w')) L.push(cons('ambre',aP.length+' entretien(s) à programmer','Le plan d\'entretien a repéré des opérations en retard ou proches qui ne sont pas encore inscrites au registre.',['Tout programmer','programmerTout()']));
+    P.filter(l=>l.etat==='En retard').slice(0,3).forEach(l=>L.push(cons('rouge',l.e.code+' : '+l.type.toLowerCase()+' en retard',`${l.lib}. Échéance à ${fmt(l.ech)} ${l.u}, l'engin est à ${fmt(l.cpt)} ${l.u}.`,['Voir le plan',"VUE_M='plan';aller('maintenance')"])));
+    const g={}; P.filter(l=>l.pendant&&l.etat!=='À jour').forEach(l=>{(g[l.e.code+l.pendant.id]=g[l.e.code+l.pendant.id]||[]).push(l)});
+    Object.values(g).forEach(xs=>L.push(cons('ambre',xs[0].e.code+' : entretien pendant une sortie',`${xs.map(x=>x.type.toLowerCase()).join(', ')} à faire pendant la sortie ${esc(xs[0].pendant.client)}. Faites-les ensemble avant le départ : l'engin n'est arrêté qu'une fois.`,['Ouvrir la sortie',`aller('missions','${xs[0].pendant.id}')`])));
+    const sv=D.engins.filter(e=>!rythmeEngin(e)).map(e=>e.code);
+    if(mod==='maintenance'&&sv.length) L.push(cons('bleu','Dates d\'entretien impossibles à prévoir',sv.join(', ')+' : pas assez de sorties avec compteur relevé au départ et au retour.'));
+  }
+  if(mod==='carburant'||mod==='bord'||mod==='parametres'){
+    if(nb(D.params.prixLitre)!==REF.prix) L.push(cons('ambre','Prix du litre différent du prix officiel',`Le réglage est à ${fcfa(D.params.prixLitre)}, le prix officiel CSPH est de ${fcfa(REF.prix)}.`,peut('parametres','w')?['Mettre 828 FCFA','appliquerPrix()']:null));
+    const ch=D.carburant.filter(c=>nb(c.prixLitre)>REF.prix);
+    if(ch.length&&mod!=='parametres') L.push(cons('ambre',ch.length+' bon(s) payé(s) au-dessus de 828 FCFA','Le gasoil est vendu au prix réglementé partout au Cameroun. Vérifiez avec la station : '+ch.slice(0,5).map(c=>c.bon).join(', ')+'.'));
+  }
+  if(mod==='carburant'||mod==='missions'||mod==='bord') D.missions.filter(m=>m.statut!=='Annulée').forEach(m=>{ const r=calcMission(m), e=engin(m.engin);
+    if(r.alerteCarb) L.push(cons('rouge','Trop de carburant : '+e.code,`${esc(m.client)} : ${fmt(r.litresReels)} L consommés pour environ ${fmt(r.lth)} L attendus (+${fmt(r.ecart)} %).`,['Ouvrir la sortie',`aller('missions','${m.id}')`]));
+    if(mod!=='carburant'&&r.net<0&&m.statut!=='Planifiée') L.push(cons('rouge','Sortie à perte : '+e.code,`${esc(m.client)} : ${fcfa(r.net)}. Tarif minimum pour tout couvrir : ${fcfa(r.seuil)}.`,['Ouvrir',`aller('missions','${m.id}')`]));
+    const f=refEngin(e); if(mod==='missions'&&f&&!f.diff&&m.mode==='Jours'&&nb(m.tarif)<f.min) L.push(cons('ambre','Tarif bas : '+e.code,`${fcfa(m.tarif)} par jour, la grille va de ${fcfa(f.min)} à ${fcfa(f.max)}.`)); });
+  if(mod==='pannes'||mod==='bord') D.pannes.filter(p=>p.visa==='En attente').forEach(p=>L.push(cons('ambre','Réparation à viser : '+engin(p.engin).code,esc(p.description)+' ('+fcfa(p.cout)+').',['Voir les pannes',"aller('pannes')"])));
+  if(mod==='engins') D.engins.forEach(e=>{ const f=refEngin(e);
+    if(f&&f.diff) L.push(cons('bleu',e.code+' : modèle à vérifier',`La fiche indique « ${esc(e.marque)} », la description officielle du parc parle de ${f.m}.`));
+    else if(f&&nb(e.tarifJour)&&(nb(e.tarifJour)<f.min||nb(e.tarifJour)>f.max)) L.push(cons('ambre',e.code+' : tarif hors grille',`${fcfa(e.tarifJour)} par jour, la grille va de ${fcfa(f.min)} à ${fcfa(f.max)} (${f.cond}).`));
+    if(!f) L.push(cons('bleu',e.code+' : chiffres à confirmer','Aucune donnée officielle pour ce type d\'engin : tarif, puissance, prix d\'achat et durée de vie sont à prendre sur les factures.')); });
+  if(mod==='rapports'){ const s={}; D.missions.filter(m=>m.statut!=='Annulée').forEach(m=>{ const c=engin(m.engin).code; s[c]=(s[c]||0)+calcMission(m).net; });
+    const t=Object.entries(s).sort((a,b)=>b[1]-a[1]); if(t.length){ L.push(cons('bleu','Engin le plus rentable',`${t[0][0]} : ${fcfa(t[0][1])} de net.`)); if(t.length>1) L.push(cons('bleu','Engin le moins rentable',`${t[t.length-1][0]} : ${fcfa(t[t.length-1][1])}. Revoir son tarif ou ses dépenses.`)); } }
+  const o={rouge:0,ambre:1,bleu:2}; L.sort((a,b)=>o[a.n]-o[b.n]); return mod==='bord'?L.slice(0,6):L;
+}
+let ASSIST=false;
+function majAssistant(){
+  const b=document.getElementById('assist-btn'), p=document.getElementById('assist'); if(!b||!U) return;
+  const mod=FICHE?'missions':MOD, L=conseils(mod), urg=L.filter(c=>c.n!=='bleu').length;
+  b.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg><span>Assistant</span>${urg?`<em>${urg}</em>`:''}`;
+  b.classList.toggle('cache',ASSIST); p.classList.toggle('cache',!ASSIST);
+  if(!ASSIST) return;
+  const titre=MODULES.find(m=>m.id===MOD)?.titre||'';
+  p.innerHTML=`<header><div><b>Assistant</b><small>${titre}</small></div><button onclick="ASSIST=false;majAssistant()" aria-label="Fermer">✕</button></header>
+  <div class="assist-corps"><h4>Sur cette page</h4>${L.length?L.map((c,i)=>`<article class="conseil ${c.n}"><small>${NIV[c.n]}</small><b>${c.t}</b><p>${c.x}</p>${c.b?`<button class="btn petit" onclick="${c.b[1].replace(/"/g,'&quot;')};${c.b[1].startsWith('aller')?'ASSIST=innerWidth>900;':''}majAssistant()">${c.b[0]}</button>`:''}</article>`).join(''):'<p class="aide">Rien à signaler ici. Tout est en ordre.</p>'}
+  <h4 style="margin-top:18px">Poser une question</h4><p class="aide">Dans l'application, l'assistant répond aussi aux questions sur la page ouverte, avec l'IA et à partir des vraies données. La maquette montre seulement ses conseils.</p></div>`;
+}
+function appliquerPrix(){ D.params.prixLitre=REF.prix; journaliser('Données de référence','Paramètres','Prix du litre : 828 FCFA'); sauver(); rendre(); toast('Prix du litre mis à 828 FCFA'); }
 
 function syntheseEngins(){
   const ms=D.missions.filter(m=>m.statut==='En cours'||m.statut==='Terminée');
@@ -944,7 +1175,13 @@ function vueJournal(){
 
 function vueParametres(){
   const p=D.params;
-  return `<div class="carte"><h3>Paramètres de calcul</h3><div class="champs">
+  const ref=D.engins.map(e=>{ const f=REF.engins[e.designation]; return `<tr><td><b>${e.code}</b><small class="sous">${esc(e.marque)}</small></td><td>${f?f.m:'<span class="sous">aucune donnée officielle</span>'}</td><td>${f?f.cv:'–'}</td><td class="n">${nb(e.tarifJour)?fcfa(e.tarifJour):'–'}</td><td>${f?fcfa(f.min)+' à '+fcfa(f.max)+'<small class="sous">'+f.cond+'</small>':'–'}</td></tr>`; }).join('');
+  return `<div class="carte"><h3>Données de référence officielles</h3><p style="color:var(--doux);margin-top:0;font-size:13.5px">Mise à jour du 19/11/2026. Dans l'application, rien n'est changé sans accord et seules les cases vides des fiches sont remplies. Une sortie visée par le Président garde ses chiffres.</p>
+  <div class="reference"><div><b>Gasoil : ${fcfa(REF.prix)} le litre</b><p>Prix réglementé fixé par la CSPH, inchangé depuis février 2024 et toujours en vigueur en novembre 2026.</p>${nb(p.prixLitre)!==REF.prix?`<p class="ecart">Votre réglage : ${fcfa(p.prixLitre)}.</p><button class="btn petit prim" onclick="appliquerPrix()">Appliquer le prix officiel</button>`:'<p class="ok">Votre réglage est à jour.</p>'}</div>
+  <div><b>Salaire minimum : ${fcfa(REF.smig)} par mois</b><p>Décret n° 2023/00338/PM du 21 mars 2023. Plancher légal par jour de travail : <b>${fcfa(REF.plancher)}</b>. Le vrai salaire des conducteurs vient du service du personnel.</p></div></div>
+  <div class="tableau" style="margin-top:12px"><table><thead><tr><th>Engin</th><th>Modèle de référence</th><th>Puissance</th><th class="n">Tarif saisi</th><th>Grille par jour</th></tr></thead><tbody>${ref}</tbody></table></div>
+  <p style="color:var(--doux);font-size:12.5px">Source : document « Description des engins » du projet ESTRIDE du Conseil Régional de l'Est (grille journalière au Cameroun, base 8 heures par jour).</p></div>
+  <div class="carte"><h3>Paramètres de calcul</h3><div class="champs">
     <div class="champ"><label>Prix du litre de gasoil (FCFA)</label><input type="number" id="pp-prix" value="${p.prixLitre}"></div>
     <div class="champ"><label>Taux à vide du porte-char (L/km)</label><input type="number" step="0.01" id="pp-tv" value="${p.tauxVide}"></div>
     <div class="champ"><label>Taux en charge du porte-char (L/km)</label><input type="number" step="0.01" id="pp-tc" value="${p.tauxCharge}"></div>
@@ -1034,6 +1271,10 @@ function enregistrer(){
   if(mod==='carburant' && o.type==='Approvisionnement cuve'){ o.mission=''; o.engin=''; }
   if(mod==='carburant' && o.mission){ o.engin=mission(o.mission)?.engin||o.engin; }
   if(mod==='missions' && o.statut==='Terminée' && o.cptRetour!==''){ const e=engin(o.engin); if(e && nb(o.cptRetour)>nb(e.compteur)) e.compteur=nb(o.cptRetour); }
+  if(mod==='maintenance'){ o.statut=o.statut||'Faite';
+    if(o.statut==='Faite'){ const e=engin(o.engin), pl=e&&planDe(e).find(x=>x[0]===o.type);
+      if(pl&&o.compteur!==''&&o.compteur!=null&&!nb(o.prochaine)) o.prochaine=nb(o.compteur)+pl[2];
+      D.maintenance=D.maintenance.filter(x=>!(x.engin===o.engin&&x.type===o.type&&x.statut==='Prévue'&&x.id!==EDIT.id)); } }
   if(EDIT.id){ const i=D[mod].findIndex(x=>x.id===EDIT.id); D[mod][i]=o; journaliser('Modification',titreMod(mod),resume(mod,o)); }
   else { o.id=uid(mod[0]); D[mod].push(o); journaliser('Création',titreMod(mod),resume(mod,o)); if(mod==='missions'){ sauver(); fermer(); aller('missions',o.id); toast('Sortie créée : ajoutez maintenant ses dépenses'); return; } }
   sauver(); fermer(); rendre(); toast('Enregistré');
