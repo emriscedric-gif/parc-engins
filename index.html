@@ -317,7 +317,7 @@ function donneesDemo(){
       {id:'e6', code:'PCH-01', designation:'Porte-char', marque:'Mercedes Actros 3341', immat:'CE 201 RE', compteur:86400, chauffeur:'Bello Hamadou', salaireJour:15000, tarifJour:0, tarifHeure:0, cv:408, charge:'0.54', conso:'', achat:0, residuel:0, vie:0, entretien:0}
     ],
     missions:[
-      {id:'m1', engin:'e1', client:'Phineas', lieu:'Belabo', debut:'2026-11-02', fin:'2026-11-08', mode:'Jours', tarif:500000, cptDepart:4310, cptRetour:4380, carbClient:'non', conducteur:'oui', remise:0, encaisse:2000000, statut:'Terminée', visa:'Non visée', obs:'Sortie reprise du fichier Excel (carburant de l\'engin et salaire à confirmer)'},
+      {id:'m1', engin:'e1', client:'Phineas', lieu:'Belabo', debut:'2026-11-02', fin:'2026-11-08', mode:'Jours', tarif:500000, cptDepart:4310, cptRetour:4380, carbClient:'plein', conducteur:'oui', remise:0, encaisse:2000000, statut:'Terminée', visa:'Non visée', obs:'Sortie reprise du fichier Excel (carburant de l\'engin et salaire à confirmer)'},
       {id:'m2', engin:'e2', client:'Commune de Batouri', lieu:'Batouri', debut:'2026-11-10', fin:'2026-11-24', mode:'Jours', tarif:450000, cptDepart:3080, cptRetour:'', carbClient:'non', conducteur:'oui', remise:0, encaisse:0, statut:'En cours', visa:'Non visée', obs:'Reprofilage piste rurale'},
       {id:'m3', engin:'e4', client:'Commune d\'Abong-Mbang', lieu:'Abong-Mbang', debut:'2026-11-05', fin:'2026-11-06', mode:'Heures', tarif:60000, cptDepart:2190, cptRetour:2210, carbClient:'non', conducteur:'oui', remise:0, encaisse:1200000, statut:'Terminée', visa:'Non visée', obs:'Curage de caniveaux'},
       {id:'m4', engin:'e3', client:'Entreprise BTP Kadey', lieu:'Batouri', debut:'2026-11-26', fin:'2026-11-30', mode:'Jours', tarif:400000, cptDepart:'', cptRetour:'', carbClient:'non', conducteur:'oui', remise:0, encaisse:0, statut:'Planifiée', visa:'Non visée', obs:'Prévision : le compte est estimé avant le départ'}
@@ -329,7 +329,8 @@ function donneesDemo(){
     carburant:[
       {id:'c0', date:'2026-11-01', type:'Approvisionnement cuve', bon:'FAC-2026-88', engin:'', mission:'', compteur:'', litres:5000, prixLitre:828, fournisseur:'Tradex Bertoua', obs:''},
       {id:'c4', date:'2026-11-02', type:'Dotation engin', bon:'BC-0112', engin:'e1', mission:'m1', compteur:4310, litres:400, prixLitre:828, fournisseur:'', obs:'Plein du départ'},
-      {id:'c5', date:'2026-11-08', type:'Plein refait par le client au retour', bon:'Plein Phineas', engin:'e6', mission:'m1', compteur:'', litres:90, prixLitre:828, fournisseur:'Station de Belabo', obs:''},
+      {id:'c6', date:'2026-11-08', type:'Plein refait par le client au retour', bon:'Plein Phineas', engin:'e1', mission:'m1', compteur:4380, litres:400, prixLitre:828, fournisseur:'Station de Belabo', obs:''},
+      {id:'c5', date:'2026-11-08', type:'Plein du porte-char refait par le client', bon:'Plein porte-char Phineas', engin:'e6', mission:'m1', compteur:'', litres:90, prixLitre:828, fournisseur:'Station de Belabo', obs:''},
       {id:'c1', date:'2026-11-10', type:'Dotation engin', bon:'BC-0114', engin:'e2', mission:'m2', compteur:3080, litres:300, prixLitre:828, fournisseur:'', obs:''},
       {id:'c2', date:'2026-11-05', type:'Dotation engin', bon:'BC-0113', engin:'e4', mission:'m3', compteur:2190, litres:200, prixLitre:828, fournisseur:'', obs:''},
       {id:'c3', date:'2026-11-06', type:'Achat direct à la station', bon:'TOT-5521', engin:'e4', mission:'m3', compteur:2201, litres:250, prixLitre:828, fournisseur:'Station Tradex Abong-Mbang', obs:''}
@@ -352,7 +353,7 @@ function donneesDemo(){
 }
 
 /* Stockage local (protégé) */
-const CLE='cre-engins-v7';
+const CLE='cre-engins-v8';
 let D;
 function charger(){ try{ const s=localStorage.getItem(CLE); D=s?JSON.parse(s):donneesDemo(); }catch(e){ D=donneesDemo(); } }
 function sauver(){ try{ localStorage.setItem(CLE, JSON.stringify(D)); }catch(e){} }
@@ -406,22 +407,25 @@ function calcMission(m){
   const lth = heures*consoEngin(e);
   const bons = D.carburant.filter(c=>c.mission===m.id && (c.type==='Dotation engin'||c.type==='Achat direct à la station'));
   const rendus = D.carburant.filter(c=>c.mission===m.id && c.type==='Plein refait par le client au retour');
+  const rendusPc = D.carburant.filter(c=>c.mission===m.id && c.type==='Plein du porte-char refait par le client');
   const pannes = D.pannes.filter(x=>x.mission===m.id && x.visa!=='Refusé'), entr = D.maintenance.filter(x=>x.mission===m.id && x.statut!=='Prévue');
   let carb, litresReels=null, estime=false;
   const depart=bons.reduce((s,c)=>s+montantBon(c),0), litDep=bons.reduce((s,c)=>s+nb(c.litres),0), litRen=rendus.reduce((s,c)=>s+nb(c.litres),0);
-  if(m.carbClient==='oui'){ carb=0; }
+  const renduEngin=Math.min(litRen*(litDep?depart/litDep:nb(P.prixLitre)), depart);
+  if(m.carbClient==='plein'){ carb=depart-renduEngin; }
+  else if(m.carbClient==='oui'){ carb=0; }
   else if(bons.length){ litresReels=bons.reduce((s,c)=>s+nb(c.litres),0); carb=bons.reduce((s,c)=>s+montantBon(c),0); }
   else { carb=lth*nb(P.prixLitre); estime=true; }
-  const baseLub = m.carbClient==='non' ? carb : lth*nb(P.prixLitre);
+  const baseLub = m.carbClient==='non' ? carb : (lth*nb(P.prixLitre) || depart);
   const lubLignes = L.some(l=>l.cat===CHARGES[0]);
   const lub = lubLignes ? som(CHARGES[0]) : baseLub*nb(P.tauxLub)/100;
   const ts = D.transports.filter(t=>t.mission===m.id);
   // aller-retour du porte-char : le client refait son plein avant le retour, seule la part non rendue reste au Conseil
   const porteBrut = ts.reduce((s,t)=>s+calcTransport(t).cout,0), litresPorte=ts.reduce((s,t)=>s+calcTransport(t).litres,0);
-  const rendu = Math.min(rendus.reduce((s,c)=>s+montantBon(c),0), porteBrut), porte = porteBrut-rendu;
+  const rendu = Math.min(rendusPc.reduce((s,c)=>s+montantBon(c),0), porteBrut), porte = porteBrut-rendu;
   const conducteur = m.conducteur==='oui' && e ? jours*nb(e.salaireJour) : 0;
   const postes = [
-    ['Carburant de l\'engin'+(m.carbClient==='oui'?' (fourni par le client)':estime?' (estimation)':''), carb],
+    ['Carburant de l\'engin'+(m.carbClient==='oui'?' (apporté par le client)':m.carbClient==='plein'?(litRen?' (plein du départ '+fmt(depart)+' − plein refait par le client '+fmt(renduEngin)+')':' (plein à plein, le client n\'a pas encore rendu le plein)'):estime?' (estimation)':''), carb],
     ['Lubrifiants et graisse'+(lubLignes?'':' ('+P.tauxLub+' % du carburant)'), lub],
     ['Carburant du porte-char'+(rendu?' ('+fmt(porteBrut)+' − plein refait par le client au retour '+fmt(rendu)+')':' (aller et retour)'), porte],
     ['Conducteur ('+(e?.chauffeur||'non désigné')+')', conducteur],
@@ -494,7 +498,7 @@ const FORMS = {
     {s:'Conditions de facturation'},
     {k:'mode',l:'Facturation',t:'select',o:['Jours','Heures','Forfait']},{k:'tarif',l:'Tarif (FCFA par jour, par heure ou forfait)',t:'number'},
     {k:'remise',l:'Remise accordée (FCFA)',t:'number'},{k:'encaisse',l:'Montant déjà encaissé (FCFA)',t:'number'},
-    {k:'carbClient',l:'Qui paie le carburant de l\'engin ?',t:'select',o:[['non','Le Conseil paie le carburant de l\'engin (bons)'],['oui','Le client fournit tout le carburant']]},
+    {k:'carbClient',l:'Qui paie le carburant de l\'engin ?',t:'select',o:[['plein','Plein à plein : le client prend l\'engin le réservoir plein et le rend plein'],['non','Le Conseil paie tout le carburant'],['oui','Le client apporte son carburant']]},
     {k:'conducteur',l:'Compter le salaire du conducteur',t:'select',o:[['oui','Oui'],['non','Non']]},
     {c:'recettes',l:'Total des entrées',f:(m,r)=>fcfa(r.recettes)},
     {c:'net',l:'Net restant en caisse',f:(m,r)=>fcfa(r.net)},
@@ -521,7 +525,7 @@ const FORMS = {
   ]},
   carburant:{titre:'bon de carburant', champs:[
     {s:'Bon de carburant'},
-    {k:'type',l:'Nature',t:'select',o:[['Dotation engin','Dotation depuis la cuve du parc'],['Achat direct à la station','Achat direct à la station'],['Plein refait par le client au retour','Plein du porte-char refait par le client au retour (réduit le coût du porte-char)'],['Approvisionnement cuve','Approvisionnement de la cuve (achat de stock)']]},
+    {k:'type',l:'Nature',t:'select',o:[['Dotation engin','Dotation depuis la cuve du parc'],['Achat direct à la station','Achat direct à la station'],['Plein refait par le client au retour','Plein de l\'engin refait par le client au retour (plein à plein)'],['Plein du porte-char refait par le client','Plein du porte-char refait par le client avant le retour'],['Approvisionnement cuve','Approvisionnement de la cuve (achat de stock)']]},
     {k:'date',l:'Date',t:'date',req:1},{k:'bon',l:'N° de bon ou de facture'},{k:'fournisseur',l:'Station ou fournisseur'},
     {s:'Engin et sortie'},
     {k:'mission',l:'Sortie concernée',t:'select',o:()=>[['','Aucune (hors sortie)'],...D.missions.map(m=>[m.id,(engin(m.engin)?.code||'')+' · '+m.client+' ('+m.lieu+')'])]},
@@ -869,7 +873,7 @@ function lireNbT(t){ const x=String(t||'').replace(/fcfa|l$/i,'').replace(/[\s\u
 function trouverEnginT(t){ const n=NORM(t); if(!n) return null; let r=D.engins.filter(e=>n.includes(NORM(e.code))); if(!r.length) r=D.engins.filter(e=>NORM(e.designation).includes(n)||n.includes(NORM(e.designation))); return r.length===1?r[0]:undefined; }
 let TERRAIN=null;
 const COLS_T=[['date','Date','jj/mm/aaaa'],['type','Type','dotation, achat, cuve, plein…'],['bon','N° de bon',''],['engin','Engin','BUL-01'],['sortie','Sortie (client)','Phineas'],['compteur','Compteur',''],['litres','Litres',''],['prix','Prix du litre','828']];
-const TYPES_C=['Dotation engin','Achat direct à la station','Approvisionnement cuve','Plein refait par le client au retour'];
+const TYPES_C=['Dotation engin','Achat direct à la station','Approvisionnement cuve','Plein refait par le client au retour','Plein du porte-char refait par le client'];
 function verifLigneT(v){
   const err=[]; const d=lireDateT(v.date); if(!d) err.push('date illisible');
   const ty=TYPES_C.find(o=>NORM(o).startsWith(NORM(v.type))||NORM(o).includes(NORM(v.type)))||(NORM(v.engin)?'Dotation engin':''); if(!NORM(v.type)&&!ty) err.push('type à remplir');
@@ -955,7 +959,7 @@ function vueCarburant(){
   if(ONGLET_CARB==='bons'){
     const l=D.carburant.filter(correspond).sort((a,b)=>b.date.localeCompare(a.date));
     contenu=outils('carburant')+tableau([
-      {l:'Date',f:c=>dfr(c.date)},{l:'Type',f:c=>etiq(c.type==='Approvisionnement cuve'?'Achat cuve':c.type==='Dotation engin'?'Dotation':c.type==='Plein refait par le client au retour'?'Plein client':'Station')},
+      {l:'Date',f:c=>dfr(c.date)},{l:'Type',f:c=>etiq(c.type==='Approvisionnement cuve'?'Achat cuve':c.type==='Dotation engin'?'Dotation':c.type==='Plein refait par le client au retour'?'Plein engin (client)':c.type==='Plein du porte-char refait par le client'?'Plein porte-char (client)':'Station')},
       {l:'N° de bon',f:c=>esc(c.bon)},{l:'Engin',f:c=>c.engin?nomEngin(c.engin):'Cuve du parc'},{l:'Sortie',f:c=>c.mission?sortieTxt(c.mission):'–'},
       {l:'Compteur',n:1,f:c=>c.compteur!==''&&c.compteur!=null?fmt(c.compteur):'–'},{l:'Litres',n:1,f:c=>fmt(c.litres)},{l:'Prix / L',n:1,f:c=>fmt(c.prixLitre)},
       {l:'Montant',n:1,f:c=>`<b>${fcfa(montantBon(c))}</b>`},{l:'Station ou fournisseur',f:c=>esc(c.fournisseur)}
@@ -1218,7 +1222,7 @@ let EDIT=null;
 function defauts(mod){
   const p=D.params;
   return {
-    missions:{statut:'Planifiée',mode:'Jours',debut:auj(),cptDepart:'',cptRetour:'',carbClient:'non',conducteur:'oui',remise:0,encaisse:0,visa:'Non visée'},
+    missions:{statut:'Planifiée',mode:'Jours',debut:auj(),cptDepart:'',cptRetour:'',carbClient:'plein',conducteur:'oui',remise:0,encaisse:0,visa:'Non visée'},
     lignes:{mission:FICHE,date:auj(),cat:CHARGES[2],qte:1,unite:'jour',pu:''},
     carburant:{date:auj(),type:'Dotation engin',mission:FICHE||'',engin:FICHE?mission(FICHE)?.engin:'',prixLitre:p.prixLitre,compteur:''},
     pannes:{date:auj(),gravite:'Mineure',statut:'Ouverte',mission:FICHE||'',engin:FICHE?mission(FICHE)?.engin:'',cout:0,visa:'Non requis'},
