@@ -70,6 +70,10 @@ header.haut h2{font-size:17px;margin:0;flex:1}
 .ligne-compte.net{background:#14532d;color:#fff;border-radius:8px;padding:12px;margin:12px 0;font-weight:700;border:0}
 .titre-compte{color:var(--vert2,#166534);font-weight:700;font-size:12px;text-transform:uppercase;margin:14px 0 4px}
 .aide{color:var(--doux);font-size:13px}
+.exports{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border:1px dashed var(--bord);border-radius:10px;padding:8px 10px;margin-bottom:12px;font-size:13px;color:var(--doux);background:var(--carte)}
+.exports .sep{margin-left:10px}
+.onglets{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}.onglets button{border:1px solid var(--bord);background:var(--carte);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}.onglets button.actif{background:var(--vert2,#166534);color:#fff;border-color:transparent}
+.tableau-excel table{font-size:12px}.tableau-excel th{white-space:normal;vertical-align:bottom}.tableau-excel td.calc{background:#f0fdf4}.tableau-excel tr.total td{font-weight:700;background:#dcfce7}
 .kpi.fort{border:2px solid var(--vert2,#166534);background:#f0fdf4}.kpi small+small{margin:4px 0 0}
 @media print{.barre-outils,#nav-mobile,aside,header,.entete-fiche button{display:none!important}}
 .kpi.vert b{color:var(--vert2)}.kpi.rouge b{color:var(--rouge)}.kpi.ambre b{color:var(--ambre)}
@@ -228,6 +232,9 @@ const DROITS = {
   missions:   {superadmin:'rwv',president:'rv', regisseur:'rw', logistique:'r'},
   lignes:     {superadmin:'rw', president:'r',  regisseur:'rw', logistique:'rw'},
   transports: {superadmin:'rw', president:'r',  regisseur:'r',  logistique:'rw'},
+  carburant:  {superadmin:'rw', president:'r',  regisseur:'rw', logistique:'rw'},
+  pannes:     {superadmin:'rwv',president:'rv', regisseur:'rw', logistique:'rw'},
+  maintenance:{superadmin:'rw', president:'r',  regisseur:'rw', logistique:'r'},
   engins:     {superadmin:'rw', president:'r',  regisseur:'rw', logistique:'r'},
   rapports:   {superadmin:'r',  president:'r',  regisseur:'r',  logistique:'r'},
   utilisateurs:{superadmin:'rw'},
@@ -240,6 +247,9 @@ const MODULES = [
   {id:'bord', titre:'Tableau de bord', ic:'bord', court:'Accueil'},
   {id:'missions', titre:'Sorties d\'engins', ic:'mission', court:'Sorties'},
   {id:'transports', titre:'Porte-char', ic:'porte', court:'Porte-char'},
+  {id:'carburant', titre:'Carburant', ic:'carbu', court:'Carburant'},
+  {id:'pannes', titre:'Pannes et réparations', ic:'panne', court:'Pannes'},
+  {id:'maintenance', titre:'Maintenance', ic:'maint', court:'Maintenance'},
   {id:'rapports', titre:'Rapports', ic:'rapport', court:'Rapports'},
   {id:'engins', titre:'Engins et barèmes', ic:'engin', court:'Engins'},
   {id:'utilisateurs', titre:'Utilisateurs et droits', ic:'users', court:'Utilisateurs'},
@@ -253,7 +263,7 @@ const MODULES = [
    ========================================================= */
 function donneesDemo(){
   return {
-    params:{prixLitre:850, tauxVide:0.4, tauxCharge:0.5, tauxLub:10, heuresJour:8, seuilEcart:15},
+    params:{prixLitre:850, tauxVide:0.4, tauxCharge:0.5, tauxLub:10, heuresJour:8, seuilEcart:15, seuilVisa:500000, alerteMaint:25},
     utilisateurs:[
       {id:'u1', nom:'Selma KORONDO', login:'selma', role:'superadmin', actif:true},
       {id:'u2', nom:'Le Président du Conseil', login:'president', role:'president', actif:true},
@@ -276,12 +286,23 @@ function donneesDemo(){
       {id:'m4', engin:'e3', client:'Entreprise BTP Kadey', lieu:'Batouri', debut:'2026-11-26', fin:'2026-11-30', mode:'Jours', tarif:400000, cptDepart:'', cptRetour:'', carbClient:'non', conducteur:'oui', remise:0, encaisse:0, statut:'Planifiée', visa:'Non visée', obs:'Prévision : le compte est estimé avant le départ'}
     ],
     lignes:[
-      {id:'l1', mission:'m1', date:'2026-11-06', cat:'Pannes et réparations', libelle:'Fuite sur vérin de lame', qte:1, unite:'forfait', pu:180000, piece:'Atelier régional'},
-      {id:'l2', mission:'m2', date:'2026-11-10', cat:'Carburant de l\'engin (bons)', libelle:'Plein au départ', qte:300, unite:'L', pu:850, piece:'BC-0114'},
       {id:'l3', mission:'m2', date:'2026-11-10', cat:'Frais de mission (nourriture, logement)', libelle:'Ration du conducteur', qte:15, unite:'jour', pu:3000, piece:''},
-      {id:'l4', mission:'m3', date:'2026-11-05', cat:'Carburant de l\'engin (bons)', libelle:'Bon n° 1', qte:200, unite:'L', pu:850, piece:'BC-0113'},
-      {id:'l5', mission:'m3', date:'2026-11-05', cat:'Carburant de l\'engin (bons)', libelle:'Complément sur site', qte:250, unite:'L', pu:850, piece:'BC-0116'},
       {id:'l6', mission:'m3', date:'2026-11-05', cat:'Frais de route (péages, pesage, escorte)', libelle:'Pesage et péage', qte:1, unite:'forfait', pu:15000, piece:'Reçu 4471'}
+    ],
+    carburant:[
+      {id:'c0', date:'2026-11-01', type:'Approvisionnement cuve', bon:'FAC-2026-88', engin:'', mission:'', compteur:'', litres:5000, prixLitre:828, fournisseur:'Tradex Bertoua', obs:''},
+      {id:'c1', date:'2026-11-10', type:'Dotation engin', bon:'BC-0114', engin:'e2', mission:'m2', compteur:3080, litres:300, prixLitre:850, fournisseur:'', obs:''},
+      {id:'c2', date:'2026-11-05', type:'Dotation engin', bon:'BC-0113', engin:'e4', mission:'m3', compteur:2190, litres:200, prixLitre:850, fournisseur:'', obs:''},
+      {id:'c3', date:'2026-11-06', type:'Achat direct à la station', bon:'TOT-5521', engin:'e4', mission:'m3', compteur:2201, litres:250, prixLitre:850, fournisseur:'Station Tradex Abong-Mbang', obs:''}
+    ],
+    pannes:[
+      {id:'p1', engin:'e1', mission:'m1', date:'2026-11-06', description:'Fuite sur vérin de lame', gravite:'Majeure', cout:180000, statut:'Clôturée', visa:'Non requis', reparateur:'Atelier régional'},
+      {id:'p2', engin:'e3', mission:'', date:'2026-11-14', description:'Boîte de vitesses bloquée', gravite:'Immobilisante', cout:1250000, statut:'En réparation', visa:'En attente', reparateur:'CFAO Equipment'}
+    ],
+    maintenance:[
+      {id:'x1', engin:'e1', mission:'', type:'Vidange moteur', date:'2026-10-20', compteur:4150, prochaine:4400, cout:220000, prestataire:'Atelier régional', obs:''},
+      {id:'x2', engin:'e3', mission:'', type:'Révision générale', date:'2026-08-12', compteur:5400, prochaine:5650, cout:650000, prestataire:'CFAO Equipment', obs:''},
+      {id:'x3', engin:'e4', mission:'m3', type:'Graissage', date:'2026-11-06', compteur:2201, prochaine:'', cout:12000, prestataire:'Conducteur sur site', obs:''}
     ],
     transports:[
       {id:'t1', mission:'m1', porteChar:'e6', chauffeur:'Bello Hamadou', date:'2026-11-02', voyages:2, distVide:100, tauxVide:0.4, distCharge:100, tauxCharge:0.5, prixLitre:850, obs:'Aller + retour (1+1=2)'},
@@ -292,7 +313,7 @@ function donneesDemo(){
 }
 
 /* Stockage local (protégé) */
-const CLE='cre-engins-v3';
+const CLE='cre-engins-v4';
 let D;
 function charger(){ try{ const s=localStorage.getItem(CLE); D=s?JSON.parse(s):donneesDemo(); }catch(e){ D=donneesDemo(); } }
 function sauver(){ try{ localStorage.setItem(CLE, JSON.stringify(D)); }catch(e){} }
@@ -326,7 +347,9 @@ function calcTransport(t){
   return {litres, cout: litres*nb(t.prixLitre)};
 }
 const RECETTES=['Transport facturé au client','Heures supplémentaires et autres recettes'];
-const CHARGES=['Carburant de l\'engin (bons)','Lubrifiants, huiles et graisse','Salaires et primes du personnel','Frais de mission (nourriture, logement)','Frais de route (péages, pesage, escorte)','Pannes et réparations','Pièces d\'usure (dents, chenilles, pneus)','Autres dépenses'];
+// Le carburant, les pannes et l'entretien ont leurs propres registres.
+const CHARGES=['Lubrifiants, huiles et graisse','Salaires et primes du personnel','Frais de mission (nourriture, logement)','Frais de route (péages, pesage, escorte)','Pièces d\'usure (dents, chenilles, pneus)','Autres dépenses'];
+const montantBon = c => nb(c.litres)*nb(c.prixLitre);
 const montantLigne = l => nb(l.qte)*nb(l.pu);
 function joursSortie(m){ if(!m.debut) return 0; const f=m.fin||m.debut; return Math.max(1,Math.round((new Date(f)-new Date(m.debut))/864e5)+1); }
 function consoEngin(e){ if(!e) return 0; if(nb(e.conso)>0) return nb(e.conso); return 0.20*nb(e.cv)*nb(e.charge||0.54); }  // FAO : 0,20 L par CV et par heure × facteur de charge
@@ -342,14 +365,15 @@ function calcMission(m){
   const location = duree*nb(m.tarif);
   const recettes = location + som(RECETTES[0]) + som(RECETTES[1]) - nb(m.remise);
   const lth = heures*consoEngin(e);
-  const bons = L.filter(l=>l.cat===CHARGES[0]);
+  const bons = D.carburant.filter(c=>c.mission===m.id && c.type!=='Approvisionnement cuve');
+  const pannes = D.pannes.filter(x=>x.mission===m.id && x.visa!=='Refusé'), entr = D.maintenance.filter(x=>x.mission===m.id);
   let carb, litresReels=null, estime=false;
   if(m.carbClient==='oui'){ carb=0; }
-  else if(bons.length){ litresReels=bons.reduce((s,l)=>s+nb(l.qte),0); carb=bons.reduce((s,l)=>s+montantLigne(l),0); }
+  else if(bons.length){ litresReels=bons.reduce((s,c)=>s+nb(c.litres),0); carb=bons.reduce((s,c)=>s+montantBon(c),0); }
   else { carb=lth*nb(P.prixLitre); estime=true; }
   const baseLub = m.carbClient==='oui' ? lth*nb(P.prixLitre) : carb;
-  const lubLignes = L.some(l=>l.cat===CHARGES[1]);
-  const lub = lubLignes ? som(CHARGES[1]) : baseLub*nb(P.tauxLub)/100;
+  const lubLignes = L.some(l=>l.cat===CHARGES[0]);
+  const lub = lubLignes ? som(CHARGES[0]) : baseLub*nb(P.tauxLub)/100;
   const ts = D.transports.filter(t=>t.mission===m.id);
   const porte = ts.reduce((s,t)=>s+calcTransport(t).cout,0), litresPorte=ts.reduce((s,t)=>s+calcTransport(t).litres,0);
   const conducteur = m.conducteur==='oui' && e ? jours*nb(e.salaireJour) : 0;
@@ -358,9 +382,11 @@ function calcMission(m){
     ['Lubrifiants et graisse'+(lubLignes?'':' ('+P.tauxLub+' % du carburant)'), lub],
     ['Carburant du porte-char (aller et retour)', porte],
     ['Conducteur ('+(e?.chauffeur||'non désigné')+')', conducteur],
-    ['Autres salaires et primes', som(CHARGES[2])],
-    ['Frais de mission', som(CHARGES[3])], ['Frais de route', som(CHARGES[4])],
-    ['Pannes et réparations', som(CHARGES[5])], ['Pièces d\'usure', som(CHARGES[6])], ['Autres dépenses', som(CHARGES[7])]
+    ['Autres salaires et primes', som(CHARGES[1])],
+    ['Frais de mission', som(CHARGES[2])], ['Frais de route', som(CHARGES[3])],
+    ['Pannes et réparations', pannes.reduce((s,x)=>s+nb(x.cout),0)],
+    ['Entretien fait pendant la sortie', entr.reduce((s,x)=>s+nb(x.cout),0)],
+    ['Pièces d\'usure', som(CHARGES[4])], ['Autres dépenses', som(CHARGES[5])]
   ];
   const charges = postes.reduce((s,x)=>s+x[1],0);
   const net = recettes-charges;
@@ -374,7 +400,12 @@ function calcMission(m){
     // compatibilité avec l'ancien formulaire
     montant:recettes, coutExpl:charges, solde:net};
 }
+function prochaineMaint(e){
+  const l=D.maintenance.filter(x=>x.engin===e.id && x.prochaine).sort((a,b)=>nb(b.compteur)-nb(a.compteur))[0];
+  return l? nb(l.prochaine) : null;
+}
 function statutEngin(e){
+  if(D.pannes.some(p=>p.engin===e.id && p.statut!=='Clôturée' && p.gravite==='Immobilisante')) return 'En panne';
   if(D.missions.some(m=>m.engin===e.id && m.statut==='En cours')) return 'En mission';
   if(D.transports.some(t=>t.porteChar===e.id && mission(t.mission)?.statut==='En cours')) return 'En mission';
   return 'Disponible';
@@ -382,7 +413,7 @@ function statutEngin(e){
 function etiq(t){
   const map={'Disponible':'e-vert','En mission':'e-bleu','En panne':'e-rouge','Terminée':'e-gris','En cours':'e-bleu','Planifiée':'e-ambre','Annulée':'e-gris',
     'Ouverte':'e-rouge','En réparation':'e-ambre','Clôturée':'e-vert','Mineure':'e-gris','Majeure':'e-ambre','Immobilisante':'e-rouge',
-    'En attente':'e-ambre','Visé':'e-vert','Visée':'e-vert','Non visée':'e-gris','Recette':'e-vert','Dépense':'e-ambre','Refusé':'e-rouge','Non requis':'e-gris','Bon':'e-vert','Moyen':'e-ambre','Mauvais':'e-rouge'};
+    'En attente':'e-ambre','Visé':'e-vert','Visée':'e-vert','Non visée':'e-gris','Recette':'e-vert','Dépense':'e-ambre','Dotation':'e-ambre','Station':'e-bleu','Achat cuve':'e-vert','Refusé':'e-rouge','Non requis':'e-gris','Bon':'e-vert','Moyen':'e-ambre','Mauvais':'e-rouge'};
   return `<span class="etiq ${map[t]||'e-gris'}">${esc(t)}</span>`;
 }
 
@@ -445,6 +476,37 @@ const FORMS = {
     {c:'cout',l:'Coût carburant',f:t=>fcfa(calcTransport(t).cout)},
     {k:'obs',l:'Observations',t:'textarea',plein:1}
   ]},
+  carburant:{titre:'bon de carburant', champs:[
+    {s:'Bon de carburant'},
+    {k:'type',l:'Nature',t:'select',o:[['Dotation engin','Dotation depuis la cuve du parc'],['Achat direct à la station','Achat direct à la station'],['Approvisionnement cuve','Approvisionnement de la cuve (achat de stock)']]},
+    {k:'date',l:'Date',t:'date',req:1},{k:'bon',l:'N° de bon ou de facture'},{k:'fournisseur',l:'Station ou fournisseur'},
+    {s:'Engin et sortie'},
+    {k:'mission',l:'Sortie concernée',t:'select',o:()=>[['','Aucune (hors sortie)'],...D.missions.map(m=>[m.id,(engin(m.engin)?.code||'')+' · '+m.client+' ('+m.lieu+')'])]},
+    {k:'engin',l:'Engin servi',t:'select',o:()=>[['','Aucun (cuve du parc)'],...optEngins()()]},
+    {k:'compteur',l:'Compteur de l\'engin au plein',t:'number'},
+    {s:'Quantité et prix'},
+    {k:'litres',l:'Quantité (litres)',t:'number',req:1},{k:'prixLitre',l:'Prix du litre (FCFA)',t:'number'},
+    {c:'mt',l:'Montant',f:c=>fcfa(montantBon(c))},
+    {k:'obs',l:'Observations',t:'textarea',plein:1}
+  ]},
+  pannes:{titre:'panne ou réparation', champs:[
+    {s:'Panne'},
+    {k:'engin',l:'Engin',t:'select',o:optEngins(),req:1},{k:'date',l:'Date de constat',t:'date',req:1},
+    {k:'mission',l:'Survenue pendant la sortie',t:'select',o:()=>[['','Aucune (hors sortie)'],...D.missions.map(m=>[m.id,(engin(m.engin)?.code||'')+' · '+m.client])]},
+    {k:'gravite',l:'Gravité',t:'select',o:['Mineure','Majeure','Immobilisante']},
+    {k:'description',l:'Description de la panne',t:'textarea',plein:1,req:1},
+    {s:'Réparation'},
+    {k:'reparateur',l:'Réparateur / atelier'},{k:'cout',l:'Coût de réparation (FCFA)',t:'number'},
+    {k:'statut',l:'Statut',t:'select',o:['Ouverte','En réparation','Clôturée']},
+    {c:'visa',l:'Visa du Président',f:p=>nb(p.cout)>=D.params.seuilVisa?'Requis (coût ≥ '+fcfa(D.params.seuilVisa)+')':'Non requis'}
+  ]},
+  maintenance:{titre:'intervention de maintenance', champs:[
+    {k:'engin',l:'Engin',t:'select',o:optEngins(),req:1},{k:'type',l:'Type d\'intervention',t:'select',o:['Vidange moteur','Graissage','Révision générale','Pneumatiques / chenilles','Filtres','Hydraulique','Autre']},
+    {k:'date',l:'Date',t:'date',req:1},
+    {k:'mission',l:'Faite pendant la sortie',t:'select',o:()=>[['','Aucune (entretien courant)'],...D.missions.map(m=>[m.id,(engin(m.engin)?.code||'')+' · '+m.client])]},
+    {k:'compteur',l:'Compteur à l\'intervention',t:'number'},{k:'prochaine',l:'Prochaine échéance (compteur)',t:'number'},
+    {k:'cout',l:'Coût (FCFA)',t:'number'},{k:'prestataire',l:'Prestataire'},{k:'obs',l:'Observations',t:'textarea',plein:1}
+  ]},
   utilisateurs:{titre:'utilisateur', champs:[
     {k:'nom',l:'Nom complet',req:1},{k:'login',l:'Identifiant',req:1},
     {k:'role',l:'Profil',t:'select',o:()=>Object.entries(ROLES).filter(([k])=>k!=='superadmin').map(([k,v])=>[k,v.libelle])},
@@ -485,7 +547,7 @@ function aller(id, fiche){
   try{ history.replaceState(null,'','#'+id); }catch(e){}
   const vis = MODULES.filter(m=>peut(m.id,'r'));
   document.getElementById('menu').innerHTML = vis.map(m=>`<button class="${m.id===MOD?'actif':''}" onclick="aller('${m.id}')">${IC[m.ic]}<span>${m.titre}</span></button>`).join('');
-  const princ = ['bord','missions','transports','rapports'].filter(x=>peut(x,'r'));
+  const princ = ['bord','missions','carburant','rapports'].filter(x=>peut(x,'r'));
   const mob = princ.map(i=>MODULES.find(m=>m.id===i));
   document.getElementById('nav-mobile').innerHTML = mob.map(m=>`<button class="${m.id===MOD?'actif':''}" onclick="aller('${m.id}')">${IC[m.ic]}<span>${m.court}</span></button>`).join('')
     + `<button class="${princ.includes(MOD)?'':'actif'}" onclick="menuPlus()">${IC.plus}<span>Plus</span></button>`;
@@ -502,13 +564,14 @@ function menuPlus(){
 function rendre(){
   const c=document.getElementById('contenu');
   const f={bord:vueBord, engins:vueEngins, missions:FICHE?vueFiche:vueMissions, transports:vueTransports,
+    carburant:vueCarburant, pannes:vuePannes, maintenance:vueMaintenance,
     rapports:vueRapports, utilisateurs:vueUtilisateurs, journal:vueJournal, parametres:vueParametres}[MOD];
   c.innerHTML = f();
   const r=document.getElementById('recherche'); if(r){ r.value=FILTRE.q; r.focus(); r.setSelectionRange(r.value.length,r.value.length); }
 }
 const FILTRE={q:'',s:''};
 function filtrer(q){ FILTRE.q=q; rendre(); }
-function bandeauLecture(mod){ return peut(mod,'w')?'':`<div class="lecture-seule">Consultation seule pour votre profil.${mod==='missions'&&peut('missions','v')?' Vous pouvez viser les sorties terminées.':''}</div>`; }
+function bandeauLecture(mod){ return peut(mod,'w')?'':`<div class="lecture-seule">Consultation seule pour votre profil.${mod==='missions'&&peut('missions','v')?' Vous pouvez viser les sorties terminées.':''}${mod==='pannes'&&peut('pannes','v')?' Vous pouvez viser les réparations en attente.':''}</div>`; }
 function outils(mod, extra=''){
   return `<div class="barre-outils"><input id="recherche" placeholder="Rechercher…" oninput="filtrer(this.value)">${extra}
   ${peut(mod,'w')?`<button class="btn prim" onclick="formulaire('${mod}')">+ Ajouter</button>`:''}</div>`;
@@ -543,6 +606,10 @@ function vueBord(){
     if(m.statut==='Terminée' && r.reste>0) al.push(['ambre',`Reste à encaisser ${fcfa(r.reste)} : ${n}`,go]);
     if(r.estime && m.statut!=='Planifiée') al.push(['bleu',`Carburant estimé, aucun bon saisi : ${n}`,go]);
   });
+  D.pannes.filter(p=>p.visa==='En attente').forEach(p=>al.push(['ambre',`Réparation à viser par le Président : ${nomEngin(p.engin)}, ${esc(p.description)} (${fcfa(p.cout)})`,`onclick="aller('pannes')" style="cursor:pointer"`]));
+  D.pannes.filter(p=>p.gravite==='Immobilisante'&&p.statut!=='Clôturée').forEach(p=>al.push(['rouge',`${engin(p.engin)?.code} immobilisé : ${esc(p.description)}`,`onclick="aller('pannes')" style="cursor:pointer"`]));
+  D.engins.forEach(e=>{ const pm=prochaineMaint(e); if(pm && nb(e.compteur)>=pm-D.params.alerteMaint) al.push(['ambre',`Entretien à prévoir sur ${e.code} : compteur ${fmt(e.compteur)}, échéance ${fmt(pm)}`,`onclick="aller('maintenance')" style="cursor:pointer"`]); });
+  const horsM=D.maintenance.filter(x=>!x.mission).reduce((s,x)=>s+nb(x.cout),0), horsP=D.pannes.filter(x=>!x.mission&&x.visa!=='Refusé').reduce((s,x)=>s+nb(x.cout),0);
   const pe = D.engins.filter(e=>!estPorte(e)).map(e=>{ const l=ms.filter(x=>x.m.engin===e.id); return {e, n:l.length, rec:l.reduce((s,x)=>s+x.r.recettes,0), ch:l.reduce((s,x)=>s+x.r.charges,0)}; }).filter(x=>x.n);
   const max=Math.max(1,...pe.map(x=>Math.max(x.rec,x.ch)));
   const pn=prev.reduce((s,x)=>s+x.r.net,0);
@@ -557,6 +624,11 @@ function vueBord(){
     <div class="kpi ${T('netFinal')>=0?'vert':'rouge'}"><small>Net après usure</small><b>${fcfa(T('netFinal'))}</b></div>
     <div class="kpi vert"><small>Déjà encaissé</small><b>${fcfa(T('encaisse'))}</b></div>
     <div class="kpi ambre"><small>Reste à encaisser</small><b>${fcfa(T('reste'))}</b></div>
+  </div>
+  <div class="carte"><h3>Dépenses du parc hors sorties</h3>
+    <div class="ligne-compte" onclick="aller('maintenance')" style="cursor:pointer"><span>Entretien courant (maintenance)</span><span>${fcfa(horsM)}</span></div>
+    <div class="ligne-compte" onclick="aller('pannes')" style="cursor:pointer"><span>Pannes réparées hors sortie</span><span>${fcfa(horsP)}</span></div>
+    <div class="ligne-compte net"><span>Net du parc (net des sorties − dépenses hors sorties)</span><span>${fcfa(net-horsM-horsP)}</span></div>
   </div>
   <div class="deux-col">
     <div class="carte"><h3>Où va l'argent dépensé</h3>
@@ -661,8 +733,21 @@ function vueFiche(){
       </div>
     </div>
   </div>
-  <div class="carte"><h3>Pièces : entrées et dépenses saisies</h3>
-    <div class="barre-outils"><span style="flex:1;color:var(--doux)">Bons de carburant, reçus de péage, frais de mission, factures de réparation…</span>
+  <div class="carte"><h3>Carburant de l'engin pour cette sortie</h3>
+    <div class="barre-outils"><span style="flex:1;color:var(--doux)">Dotations depuis la cuve et achats à la station. Ces bons figurent aussi dans le menu Carburant.</span>
+    ${peut('carburant','w')&&(!vis||U.role==='superadmin')?`<button class="btn prim" onclick="formulaire('carburant')">+ Ajouter un bon de carburant</button>`:''}</div>
+    ${tableau([{l:'Date',f:c=>dfr(c.date)},{l:'Type',f:c=>esc(c.type)},{l:'N° de bon',f:c=>esc(c.bon)},{l:'Compteur',n:1,f:c=>c.compteur?fmt(c.compteur):'–'},{l:'Litres',n:1,f:c=>fmt(c.litres)},{l:'Prix / L',n:1,f:c=>fmt(c.prixLitre)},{l:'Montant',n:1,f:c=>`<b>${fcfa(montantBon(c))}</b>`}], D.carburant.filter(c=>c.mission===m.id), 'carburant')}
+  </div>
+  <div class="carte"><h3>Pannes et réparations pendant la sortie</h3>
+    ${peut('pannes','w')&&(!vis||U.role==='superadmin')?`<div class="barre-outils" style="justify-content:flex-end"><button class="btn prim" onclick="formulaire('pannes')">+ Déclarer une panne</button></div>`:''}
+    ${tableau([{l:'Date',f:p=>dfr(p.date)},{l:'Description',f:p=>esc(p.description)},{l:'Gravité',f:p=>etiq(p.gravite)},{l:'Coût',n:1,f:p=>fcfa(p.cout)},{l:'Statut',f:p=>etiq(p.statut)},{l:'Visa',f:p=>etiq(p.visa)}], D.pannes.filter(p=>p.mission===m.id), 'pannes')}
+  </div>
+  <div class="carte"><h3>Entretien fait pendant la sortie</h3>
+    ${peut('maintenance','w')&&(!vis||U.role==='superadmin')?`<div class="barre-outils" style="justify-content:flex-end"><button class="btn prim" onclick="formulaire('maintenance')">+ Ajouter un entretien</button></div>`:''}
+    ${tableau([{l:'Date',f:x=>dfr(x.date)},{l:'Intervention',f:x=>esc(x.type)},{l:'Coût',n:1,f:x=>fcfa(x.cout)},{l:'Prestataire',f:x=>esc(x.prestataire)}], D.maintenance.filter(x=>x.mission===m.id), 'maintenance')}
+  </div>
+  <div class="carte"><h3>Autres entrées et dépenses</h3>
+    <div class="barre-outils"><span style="flex:1;color:var(--doux)">Salaires et primes, frais de mission, péages et pesage, lubrifiants, pièces d'usure, recettes en plus de la location…</span>
     ${ecrL?`<button class="btn prim" onclick="formulaire('lignes')">+ Ajouter une entrée ou une dépense</button>`:''}</div>
     ${tableau([
       {l:'Date',f:l=>dfr(l.date)},{l:'Nature',f:l=>etiq(RECETTES.includes(l.cat)?'Recette':'Dépense')},{l:'Catégorie',f:l=>esc(l.cat)},
@@ -697,6 +782,110 @@ function vueTransports(){
   ], l, 'transports');
 }
 
+/* ---------- Registres : carburant, pannes, maintenance ---------- */
+let ONGLET_CARB='bons';
+const sortieTxt = id => { const m=mission(id); return m? (engin(m.engin)?.code||'')+' · '+esc(m.client) : '–'; };
+function lignesPorteChar(){ return D.transports.map(t=>{ const m=mission(t.mission), cv=nb(t.distVide)*nb(t.tauxVide), cc=nb(t.distCharge)*nb(t.tauxCharge), tot=nb(t.voyages)*(cv+cc);
+  return {date:t.date, porte:nomEngin(t.porteChar), chauffeur:t.chauffeur, engin:m?nomEngin(m.engin):'', client:m?.client||'', lieu:m?.lieu||'', voyages:nb(t.voyages), dv:nb(t.distVide), tv:nb(t.tauxVide), cv, dc:nb(t.distCharge), tc:nb(t.tauxCharge), cc, total:tot, prix:nb(t.prixLitre), cout:tot*nb(t.prixLitre), obs:t.obs||''}; }); }
+function lignesRecap(){ return D.missions.filter(m=>m.statut!=='Annulée').map(m=>{ const r=calcMission(m), p=Object.fromEntries(r.postes.map(x=>[x[0].replace(/ \(.*$/,''),x[1]]));
+  return {engin:nomEngin(m.engin), client:m.client, lieu:m.lieu, debut:m.debut, fin:m.fin, heures:r.heures, fourni:m.carbClient==='oui'?'Oui':'Non', litres:r.litresReels??r.lth, source:r.litresReels!==null?'bons':(m.carbClient==='oui'?'fourni par le client':'estimation'),
+    coutEngin:p['Carburant de l\'engin']||0, attendus:r.lth, ecart:r.ecart, lub:p['Lubrifiants et graisse']||0, litresPC:r.litresPorte, coutPC:p['Carburant du porte-char']||0, total:(p['Carburant de l\'engin']||0)+(p['Lubrifiants et graisse']||0)+(p['Carburant du porte-char']||0)}; }); }
+const dec = v => v==null||v===''?'':(Math.round(nb(v)*10)/10).toLocaleString('fr-FR');
+
+/* Définition des registres exportés : mêmes rubriques que les écrans */
+function registres(nom){
+  const C=(t,k,ty,o={})=>({t,k,ty:ty||'t',...o});
+  const R={
+    carburant:[
+      ['Bons et achats','BONS DE CARBURANT, ACHATS ET APPROVISIONNEMENTS DE LA CUVE',[C('Date','date','d'),C('Type','type'),C('N° de bon ou facture','bon'),C('Engin','engin'),C('Sortie (client · lieu)','sortie'),C('Compteur au plein','compteur','n'),C('Quantité (L)','litres','n',{tot:1}),C('Prix du litre','prix','n'),C('Montant (FCFA)','montant','n',{tot:1,f:'Quantité (L)*Prix du litre'}),C('Station ou fournisseur','fournisseur'),C('Observations','obs')],
+        ()=>D.carburant.map(c=>({date:c.date,type:c.type,bon:c.bon,engin:c.engin?nomEngin(c.engin):'Cuve du parc',sortie:c.mission?sortieTxt(c.mission):'',compteur:c.compteur,litres:c.litres,prix:c.prixLitre,montant:montantBon(c),fournisseur:c.fournisseur,obs:c.obs}))],
+      ['Porte-char','CARBURANT DU PORTE-CHAR (FORMULE DU FICHIER GESTION_PORTE)',[C('Date','date','d'),C('Porte-char','porte'),C('Chauffeur','chauffeur'),C('Engin transporté','engin'),C('Client','client'),C('Lieu d\'intervention','lieu'),C('Nbre de voyages','voyages','n'),C('Distance à vide (km)','dv','n'),C('Taux à vide (L/km)','tv','n'),C('Carburant à vide (L)','cv','n',{f:'Distance à vide (km)*Taux à vide (L/km)'}),C('Distance en charge (km)','dc','n'),C('Taux en charge (L/km)','tc','n'),C('Carburant en charge (L)','cc','n',{f:'Distance en charge (km)*Taux en charge (L/km)'}),C('Total carburant (L)','total','n',{tot:1,f:'Nbre de voyages*(Carburant à vide (L)+Carburant en charge (L))'}),C('Prix du litre','prix','n'),C('Coût carburant (FCFA)','cout','n',{tot:1,f:'Total carburant (L)*Prix du litre'}),C('Observations','obs')], lignesPorteChar],
+      ['Par sortie','RÉCAPITULATIF DU CARBURANT PAR SORTIE D\'ENGIN',[C('Engin','engin'),C('Client','client'),C('Lieu','lieu'),C('Début','debut','d'),C('Fin','fin','d'),C('Heures de travail','heures','n'),C('Carburant fourni par le client','fourni'),C('Litres de l\'engin','litres','n',{tot:1}),C('Origine des litres','source'),C('Coût carburant engin','coutEngin','n',{tot:1}),C('Litres attendus','attendus','n',{tot:1}),C('Écart (%)','ecart','n'),C('Lubrifiants et graisse','lub','n',{tot:1}),C('Litres porte-char','litresPC','n',{tot:1}),C('Coût porte-char','coutPC','n',{tot:1}),C('Total carburant et lubrifiants','total','n',{tot:1,f:'Coût carburant engin+Lubrifiants et graisse+Coût porte-char'})], lignesRecap]
+    ],
+    pannes:[['Pannes','REGISTRE DES PANNES ET RÉPARATIONS',[C('Date de constat','date','d'),C('Engin','engin'),C('Sortie (client · lieu)','sortie'),C('Description de la panne','description'),C('Gravité','gravite'),C('Réparateur / atelier','reparateur'),C('Coût de réparation (FCFA)','cout','n',{tot:1}),C('Statut','statut'),C('Visa du Président','visa')],
+      ()=>D.pannes.map(x=>({...x,engin:nomEngin(x.engin),sortie:x.mission?sortieTxt(x.mission):''}))]],
+    maintenance:[['Maintenance','REGISTRE DE LA MAINTENANCE DES ENGINS',[C('Date','date','d'),C('Engin','engin'),C('Sortie (client · lieu)','sortie'),C('Type d\'intervention','type'),C('Compteur à l\'intervention','compteur','n'),C('Prochaine échéance (compteur)','prochaine','n'),C('Coût (FCFA)','cout','n',{tot:1}),C('Prestataire','prestataire'),C('Observations','obs')],
+      ()=>D.maintenance.map(x=>({...x,engin:nomEngin(x.engin),sortie:x.mission?sortieTxt(x.mission):''}))]]
+  };
+  return R[nom];
+}
+function exporter(nom, vierge, format){
+  const feuilles=registres(nom), titreDoc={carburant:'Registre du carburant',pannes:'Registre des pannes et réparations',maintenance:'Registre de la maintenance'}[nom];
+  const entete=`<table class="en"><tr><td><b>RÉPUBLIQUE DU CAMEROUN</b><br><i>Paix – Travail – Patrie</i><br><b>CONSEIL RÉGIONAL DE L'EST</b><br><i>Parc d'engins</i></td><td></td><td style="text-align:right"><b>REPUBLIC OF CAMEROON</b><br><i>Peace – Work – Fatherland</i><br><b>EAST REGIONAL COUNCIL</b><br><i>Equipment fleet</i></td></tr></table>`;
+  const fv=(v,ty)=>v==null||v===''?'':ty==='d'?dfr(v):ty==='n'?(typeof v==='number'?dec(v):v):esc(v);
+  const corps=feuilles.map(([n,titre,cols,src],i)=>{
+    const lignes=vierge?Array.from({length:12},()=>({})):src();
+    const tot=c=>lignes.reduce((s,l)=>s+nb(l[c.k]),0);
+    return `<div class="feuille" ${i?'style="page-break-before:always"':''}>${entete}<h2>${titre}</h2><p class="per">${vierge?'Période du ......../......../............ au ......../......../............ &nbsp; Établi par : ........................................':'Toutes les dates'}</p>
+    <table class="reg"><thead><tr><th>N°</th>${cols.map(c=>`<th>${c.t}</th>`).join('')}</tr></thead><tbody>
+    ${lignes.map((l,k)=>`<tr${vierge?' class="v"':''}><td>${k+1}</td>${cols.map(c=>`<td class="${c.ty==='n'?'n':''}${c.f?' calc':''}">${vierge?'':fv(l[c.k],c.ty)}</td>`).join('')}</tr>`).join('')}
+    <tr class="tot"><td></td>${cols.map((c,j)=>`<td class="n">${j===0?'<b>TOTAL</b>':c.tot&&!vierge?'<b>'+dec(tot(c))+'</b>':''}</td>`).join('')}</tr></tbody></table>
+    ${vierge&&cols.some(c=>c.f)?`<p class="per">Calculs : ${cols.filter(c=>c.f).map(c=>c.t+' = '+c.f.replace(/\*/g,' × ')).join(' ; ')}.</p>`:''}
+    <table class="sign"><tr><th>Établi par</th><th>Le Régisseur des engins</th><th>Visa du Président du Conseil</th></tr><tr><td></td><td></td><td></td></tr></table></div>`;
+  }).join('');
+  const css=`body{font-family:Arial,sans-serif;font-size:10px;margin:10mm}.en{width:100%;font-size:10px}h2{text-align:center;color:#14532d;font-size:15px;margin:8px 0 2px}.per{text-align:center;color:#6b7280;margin:2px 0 8px}
+  table.reg{width:100%;border-collapse:collapse}table.reg th{background:#14532d;color:#fff;border:1px solid #9ca3af;padding:3px;font-size:9px}table.reg td{border:1px solid #9ca3af;padding:3px}td.n{text-align:right}td.calc{background:#f0fdf4}tr.v td{height:26px}tr.tot td{background:#dcfce7}
+  table.sign{width:100%;border-collapse:collapse;margin-top:14px}table.sign th{background:#f0fdf4;border:1px solid #9ca3af;padding:4px}table.sign td{border:1px solid #9ca3af;height:60px}@page{size:A4 landscape;margin:8mm}`;
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${titreDoc}</title><style>${css}</style></head><body>${corps}</body></html>`;
+  if(format==='xls'){
+    const blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel'}); const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=`registre-${nom}${vierge?'-vierge':''}.xls`; document.body.appendChild(a); a.click(); a.remove(); toast('Fichier Excel téléchargé');
+  } else { const w=window.open('','_blank'); if(!w){ toast('Autorisez les fenêtres pour imprimer'); return; } w.document.write(html+'<script>setTimeout(()=>print(),300)<\/script>'); w.document.close(); }
+}
+const barreExports = nom => `<div class="exports"><span>Registre :</span><button class="btn petit" onclick="exporter('${nom}',false,'xls')">Excel</button><button class="btn petit" onclick="exporter('${nom}',false,'pdf')">PDF à imprimer</button>
+  <span class="sep">Fiche vierge à remplir à la main :</span><button class="btn petit" onclick="exporter('${nom}',true,'xls')">Excel</button><button class="btn petit" onclick="exporter('${nom}',true,'pdf')">PDF</button></div>`;
+
+function tableauExcel(cols, lignes){
+  if(!lignes.length) return '<div class="carte vide">Rien à afficher.</div>';
+  return `<div class="tableau cartes tableau-excel"><table><thead><tr><th>N°</th>${cols.map(c=>`<th class="${c.ty==='n'?'num':''}">${c.t}</th>`).join('')}</tr></thead><tbody>
+  ${lignes.map((l,i)=>`<tr><td data-l="N°">${i+1}</td>${cols.map(c=>`<td data-l="${esc(c.t)}" class="${c.ty==='n'?'num':''}${c.f?' calc':''}">${c.ty==='d'?dfr(l[c.k]):c.ty==='n'?(c.k==='ecart'?(l.ecart==null?'–':(l.ecart>0?'+':'')+Math.round(l.ecart)+' %'):dec(l[c.k])):esc(l[c.k])}</td>`).join('')}</tr>`).join('')}
+  <tr class="total"><td>Total</td>${cols.map(c=>`<td class="num">${c.tot?dec(lignes.reduce((s,l)=>s+nb(l[c.k]),0)):''}</td>`).join('')}</tr></tbody></table></div>`;
+}
+function vueCarburant(){
+  const dep=D.carburant.filter(c=>c.type!=='Approvisionnement cuve'), cuve=D.carburant.filter(c=>c.type==='Approvisionnement cuve');
+  const pc=lignesPorteChar(), rec=lignesRecap();
+  const S=(a,f)=>a.reduce((s,x)=>s+f(x),0);
+  const stock=S(cuve,c=>nb(c.litres))-S(D.carburant.filter(c=>c.type==='Dotation engin'),c=>nb(c.litres));
+  const ong=[['bons','Bons et achats'],['sorties','Par sortie'],['porte','Porte-char (calcul du fichier Excel)']];
+  const f=registres('carburant');
+  let contenu='';
+  if(ONGLET_CARB==='bons'){
+    const l=D.carburant.filter(correspond).sort((a,b)=>b.date.localeCompare(a.date));
+    contenu=outils('carburant')+tableau([
+      {l:'Date',f:c=>dfr(c.date)},{l:'Type',f:c=>etiq(c.type==='Approvisionnement cuve'?'Achat cuve':c.type==='Dotation engin'?'Dotation':'Station')},
+      {l:'N° de bon',f:c=>esc(c.bon)},{l:'Engin',f:c=>c.engin?nomEngin(c.engin):'Cuve du parc'},{l:'Sortie',f:c=>c.mission?sortieTxt(c.mission):'–'},
+      {l:'Compteur',n:1,f:c=>c.compteur!==''&&c.compteur!=null?fmt(c.compteur):'–'},{l:'Litres',n:1,f:c=>fmt(c.litres)},{l:'Prix / L',n:1,f:c=>fmt(c.prixLitre)},
+      {l:'Montant',n:1,f:c=>`<b>${fcfa(montantBon(c))}</b>`},{l:'Station ou fournisseur',f:c=>esc(c.fournisseur)}
+    ], l, 'carburant');
+  } else if(ONGLET_CARB==='sorties') contenu=tableauExcel(f[2][2], rec);
+  else contenu=`<p class="aide">Même calcul que le fichier GESTION_PORTE : carburant à vide = distance × taux à vide, en charge = distance × taux en charge, total = voyages × (à vide + en charge).</p>`+tableauExcel(f[1][2], pc);
+  return bandeauLecture('carburant')+barreExports('carburant')+`<div class="grille-kpi">
+    <div class="kpi ambre"><small>Total carburant dépensé</small><b>${fcfa(S(dep,montantBon)+S(pc,x=>x.cout))}</b></div>
+    <div class="kpi"><small>Carburant des engins</small><b>${fcfa(S(dep,montantBon))}</b><small>${fmt(S(dep,c=>nb(c.litres)))} L</small></div>
+    <div class="kpi"><small>Carburant du porte-char</small><b>${fcfa(S(pc,x=>x.cout))}</b><small>${dec(S(pc,x=>x.total))} L (formule Excel)</small></div>
+    <div class="kpi"><small>Lubrifiants et graisse</small><b>${fcfa(S(rec,x=>x.lub))}</b></div>
+    <div class="kpi vert"><small>Achats pour la cuve</small><b>${fcfa(S(cuve,montantBon))}</b><small>${fmt(S(cuve,c=>nb(c.litres)))} L</small></div>
+    <div class="kpi"><small>Stock théorique de la cuve</small><b>${fmt(stock)} L</b></div></div>
+  <div class="onglets">${ong.map(([k,l])=>`<button class="${ONGLET_CARB===k?'actif':''}" onclick="ONGLET_CARB='${k}';rendre()">${l}</button>`).join('')}</div>`+contenu;
+}
+function vuePannes(){
+  const l=D.pannes.filter(correspond).sort((a,b)=>b.date.localeCompare(a.date));
+  return bandeauLecture('pannes')+barreExports('pannes')+`<p class="aide">Une panne rattachée à une sortie est comptée dans les dépenses de cette sortie. Au-delà de ${fcfa(D.params.seuilVisa)}, la réparation attend le visa du Président.</p>`+outils('pannes')+tableau([
+    {l:'Date',f:p=>dfr(p.date)},{l:'Engin',f:p=>nomEngin(p.engin)},{l:'Sortie',f:p=>p.mission?sortieTxt(p.mission):'Hors sortie'},{l:'Description',f:p=>esc(p.description)},
+    {l:'Gravité',f:p=>etiq(p.gravite)},{l:'Coût',n:1,f:p=>fcfa(p.cout)},{l:'Statut',f:p=>etiq(p.statut)},
+    {l:'Visa du Président',f:p=>p.visa==='En attente'&&peut('pannes','v')?`<button class="btn petit prim" onclick="event.stopPropagation();viserPanne('${p.id}','Visé')">Viser</button> <button class="btn petit danger" onclick="event.stopPropagation();viserPanne('${p.id}','Refusé')">Refuser</button>`:etiq(p.visa)}
+  ], l, 'pannes');
+}
+function viserPanne(id,v){ const p=D.pannes.find(x=>x.id===id); p.visa=v; journaliser(v==='Visé'?'Visa accordé':'Visa refusé','Pannes',nomEngin(p.engin)+' · '+fcfa(p.cout)); sauver(); rendre(); toast(v==='Visé'?'Réparation visée':'Réparation refusée'); }
+function vueMaintenance(){
+  const l=D.maintenance.filter(correspond).sort((a,b)=>b.date.localeCompare(a.date));
+  return bandeauLecture('maintenance')+barreExports('maintenance')+outils('maintenance')+tableau([
+    {l:'Date',f:x=>dfr(x.date)},{l:'Engin',f:x=>nomEngin(x.engin)},{l:'Sortie',f:x=>x.mission?sortieTxt(x.mission):'Hors sortie'},{l:'Intervention',f:x=>esc(x.type)},
+    {l:'Compteur',n:1,f:x=>fmt(x.compteur)},{l:'Prochaine échéance',n:1,f:x=>{const e=engin(x.engin); const proche=e&&x.prochaine&&nb(e.compteur)>=nb(x.prochaine)-D.params.alerteMaint; return x.prochaine?(proche?`<span class="etiq e-ambre">${fmt(x.prochaine)}</span>`:fmt(x.prochaine)):'–';}},
+    {l:'Coût',n:1,f:x=>fcfa(x.cout)},{l:'Prestataire',f:x=>esc(x.prestataire)}
+  ], l, 'maintenance');
+}
+
 function syntheseEngins(){
   const ms=D.missions.filter(m=>m.statut==='En cours'||m.statut==='Terminée');
   return D.engins.filter(e=>!estPorte(e)).map(e=>{
@@ -722,7 +911,7 @@ function copierCSV(){
 }
 
 function vueUtilisateurs(){
-  const ordre=['bord','missions','lignes','transports','engins','rapports','utilisateurs','journal','parametres'];
+  const ordre=['bord','missions','lignes','transports','carburant','pannes','maintenance','engins','rapports','utilisateurs','journal','parametres'];
   const lib={r:'Lecture',rw:'Lecture + saisie',rv:'Lecture + visa',rwv:'Tout'};
   return `<div class="barre-outils"><span style="flex:1;color:var(--doux)">Le compte super administrateur ne peut être ni désactivé ni rétrogradé.</span><button class="btn prim" onclick="formulaire('utilisateurs')">+ Ajouter un utilisateur</button></div>`+
   tableau([
@@ -752,13 +941,15 @@ function vueParametres(){
     <div class="champ"><label>Lubrifiants (% du coût du carburant)</label><input type="number" id="pp-lub" value="${p.tauxLub}"></div>
     <div class="champ"><label>Heures de travail par jour (si pas de compteur)</label><input type="number" id="pp-hj" value="${p.heuresJour}"></div>
     <div class="champ"><label>Alerte d'écart de carburant (%)</label><input type="number" id="pp-ec" value="${p.seuilEcart}"></div>
+    <div class="champ"><label>Visa du Président pour les réparations au-delà de (FCFA)</label><input type="number" id="pp-sv" value="${p.seuilVisa}"></div>
+    <div class="champ"><label>Alerte maintenance (heures avant l'échéance)</label><input type="number" id="pp-am" value="${p.alerteMaint}"></div>
   </div><div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn prim" onclick="sauverParams()">Enregistrer</button></div></div>
   <div class="carte"><h3>Données de démonstration</h3><p style="color:var(--doux);margin-top:0">Remet la maquette dans son état d'origine. Toutes les saisies faites dans ce navigateur seront effacées.</p>
   <button class="btn danger" onclick="confirmer('Réinitialiser toutes les données de la maquette ?',()=>{D=donneesDemo();U=D.utilisateurs[0];journaliser('Réinitialisation','Paramètres','');sauver();rendre();toast('Données réinitialisées');})">Réinitialiser la maquette</button></div>`;
 }
 function sauverParams(){
   const g=id=>nb(document.getElementById(id).value);
-  Object.assign(D.params,{prixLitre:g('pp-prix'),tauxVide:g('pp-tv'),tauxCharge:g('pp-tc'),tauxLub:g('pp-lub'),heuresJour:g('pp-hj'),seuilEcart:g('pp-ec')});
+  Object.assign(D.params,{prixLitre:g('pp-prix'),tauxVide:g('pp-tv'),tauxCharge:g('pp-tc'),tauxLub:g('pp-lub'),heuresJour:g('pp-hj'),seuilEcart:g('pp-ec'),seuilVisa:g('pp-sv'),alerteMaint:g('pp-am')});
   journaliser('Modification','Paramètres','Paramètres de calcul'); sauver(); toast('Paramètres enregistrés');
 }
 
@@ -781,7 +972,10 @@ function defauts(mod){
   const p=D.params;
   return {
     missions:{statut:'Planifiée',mode:'Jours',debut:auj(),cptDepart:'',cptRetour:'',carbClient:'non',conducteur:'oui',remise:0,encaisse:0,visa:'Non visée'},
-    lignes:{mission:FICHE,date:auj(),cat:CHARGES[0],qte:'',unite:'L',pu:p.prixLitre},
+    lignes:{mission:FICHE,date:auj(),cat:CHARGES[2],qte:1,unite:'jour',pu:''},
+    carburant:{date:auj(),type:'Dotation engin',mission:FICHE||'',engin:FICHE?mission(FICHE)?.engin:'',prixLitre:p.prixLitre,compteur:''},
+    pannes:{date:auj(),gravite:'Mineure',statut:'Ouverte',mission:FICHE||'',engin:FICHE?mission(FICHE)?.engin:'',cout:0,visa:'Non requis'},
+    maintenance:{date:auj(),type:'Vidange moteur',mission:FICHE||'',engin:FICHE?mission(FICHE)?.engin:'',cout:0},
     transports:{mission:FICHE||'',date:auj(),voyages:2,tauxVide:p.tauxVide,tauxCharge:p.tauxCharge,prixLitre:p.prixLitre,porteChar:(D.engins.find(estPorte)||{}).id||'',chauffeur:(D.engins.find(estPorte)||{}).chauffeur||''},
     engins:{designation:'Bulldozer',charge:'0.54',entretien:60},
     utilisateurs:{role:'regisseur',actif:true}
@@ -820,12 +1014,15 @@ function lireForm(){
 function majCalc(ev){
   const o=lireForm();
   if(EDIT.mod==='missions' && ev && ev.target && ev.target.name==='engin'){ const e=engin(o.engin); if(e){ const h=nb(e.tarifHeure)&&!nb(e.tarifJour); o.mode=h?'Heures':'Jours'; o.tarif=h?nb(e.tarifHeure):nb(e.tarifJour); const f=document.getElementById('frm'); f.elements.mode.value=o.mode; f.elements.tarif.value=o.tarif; } }
-  if(EDIT.mod==='lignes' && ev && ev.target && ev.target.name==='cat'){ const f=document.getElementById('frm'); const c=o.cat===CHARGES[0]; f.elements.unite.value=c?'L':'forfait'; f.elements.pu.value=c?D.params.prixLitre:''; if(!c){ f.elements.qte.value=1; } lireForm(); } const r=EDIT.mod==='missions'?calcMission(o):null;
+  if(EDIT.mod==='carburant' && ev && ev.target && ev.target.name==='mission' && o.mission){ const f=document.getElementById('frm'); f.elements.engin.value=mission(o.mission)?.engin||''; lireForm(); } const r=EDIT.mod==='missions'?calcMission(o):null;
   FORMS[EDIT.mod].champs.filter(c=>c.c).forEach(c=>{ const el=document.getElementById('calc-'+c.c); if(el) el.textContent=c.f(o,r); });
 }
 function enregistrer(){
   const f=document.getElementById('frm'); if(!f.reportValidity()) return;
   const o=lireForm(); const mod=EDIT.mod;
+  if(mod==='pannes'){ if(nb(o.cout)>=D.params.seuilVisa){ if(!o.visa||o.visa==='Non requis') o.visa='En attente'; } else o.visa='Non requis'; }
+  if(mod==='carburant' && o.type==='Approvisionnement cuve'){ o.mission=''; o.engin=''; }
+  if(mod==='carburant' && o.mission){ o.engin=mission(o.mission)?.engin||o.engin; }
   if(mod==='missions' && o.statut==='Terminée' && o.cptRetour!==''){ const e=engin(o.engin); if(e && nb(o.cptRetour)>nb(e.compteur)) e.compteur=nb(o.cptRetour); }
   if(EDIT.id){ const i=D[mod].findIndex(x=>x.id===EDIT.id); D[mod][i]=o; journaliser('Modification',titreMod(mod),resume(mod,o)); }
   else { o.id=uid(mod[0]); D[mod].push(o); journaliser('Création',titreMod(mod),resume(mod,o)); if(mod==='missions'){ sauver(); fermer(); aller('missions',o.id); toast('Sortie créée : ajoutez maintenant ses dépenses'); return; } }
@@ -840,7 +1037,7 @@ function supprimer(){
 function titreMod(mod){ return mod==='lignes'?'Entrées et dépenses':MODULES.find(m=>m.id===mod).titre; }
 function resume(mod,o){
   return {engins:o.code+' '+o.designation, missions:nomEngin(o.engin)+' · '+o.client, transports:nomEngin(o.porteChar)+' → '+(mission(o.mission)?.lieu||''),
-    lignes:o.cat+' · '+o.libelle+' · '+fcfa(montantLigne(o)), utilisateurs:o.nom+' ('+o.role+')'}[mod]||'';
+    lignes:o.cat+' · '+o.libelle+' · '+fcfa(montantLigne(o)), carburant:o.type+' · '+o.litres+' L', pannes:nomEngin(o.engin)+' · '+o.description, maintenance:nomEngin(o.engin)+' · '+o.type, utilisateurs:o.nom+' ('+o.role+')'}[mod]||'';
 }
 
 window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(U && h!==MOD && MODULES.some(m=>m.id===h)) aller(h); });
